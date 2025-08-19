@@ -32,7 +32,7 @@ class CustomTradingViewChart:
         # 如果是台股（帶.TW後綴），使用TradingView台股格式
         if symbol.endswith('.TW'):
             taiwan_code = symbol[:-3]
-            return f"TPE:{taiwan_code}"  # 使用台灣交易所前綴
+            return f"TWSE:{taiwan_code}"  # 使用台灣證券交易所正確格式
         
         # 美股保持原樣
         return symbol

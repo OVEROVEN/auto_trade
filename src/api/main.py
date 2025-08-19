@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
 import asyncio
@@ -9,6 +10,7 @@ import logging
 import math
 from datetime import datetime, timedelta
 import pandas as pd
+import numpy as np
 
 # Import our modules
 from config.settings import settings, US_SYMBOLS, TW_SYMBOLS
@@ -21,13 +23,20 @@ from src.backtesting.backtest_engine import BacktestEngine, BacktestConfig, Stra
 from src.analysis.ai_strategy_advisor import AIStrategyAdvisor
 from src.analysis.advanced_patterns import AdvancedPatternRecognizer
 from src.visualization.chart_generator import ChartGenerator
+from src.visualization.enhanced_taiwan_widget import get_enhanced_taiwan_widget
+from src.visualization.enhanced_us_widget import get_enhanced_us_widget
+
+# New modules for enhanced analysis
+from src.analysis.pattern_signals import BuySignalEngine
+from src.ai.strategy_advisor import get_strategy_chat, StrategyContext
+from src.backtesting.strategy_backtest import StrategyBacktester, PatternBasedStrategy, PerformanceAnalyzer
 
 # Set up logging
 logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
 logger = logging.getLogger(__name__)
 
 def clean_for_json(obj):
-    """Clean data to be JSON serializable by handling NaN, infinity, and None values."""
+    """Clean data to be JSON serializable by handling NaN, infinity, numpy types, and None values."""
     if obj is None:
         return None
     elif isinstance(obj, (int, str, bool)):
@@ -36,6 +45,22 @@ def clean_for_json(obj):
         if pd.isna(obj) or not math.isfinite(obj):
             return None
         return obj
+    elif isinstance(obj, np.bool_):  # Handle numpy boolean
+        return bool(obj)
+    elif isinstance(obj, (np.integer, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64)):  # Handle all numpy integers
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float16, np.float32, np.float64)):  # Handle all numpy floats
+        if pd.isna(obj) or not math.isfinite(obj):
+            return None
+        return float(obj)
+    elif isinstance(obj, np.ndarray):  # Handle numpy arrays
+        return [clean_for_json(item) for item in obj.tolist()]
+    elif isinstance(obj, (np.generic,)):  # Catch-all for any other numpy types
+        try:
+            # Try to convert to python native type
+            return obj.item()
+        except (ValueError, TypeError):
+            return str(obj)
     elif isinstance(obj, dict):
         return {k: clean_for_json(v) for k, v in obj.items() if clean_for_json(v) is not None}
     elif isinstance(obj, (list, tuple)):
@@ -158,6 +183,12 @@ enhanced_tradingview = EnhancedTradingViewChart()
 clean_tradingview = CleanTradingViewChart()
 custom_tradingview = CustomTradingViewChart()
 
+# Initialize new analysis engines
+buy_signal_engine = BuySignalEngine()
+strategy_chat = get_strategy_chat()
+strategy_backtester = StrategyBacktester()
+performance_analyzer = PerformanceAnalyzer()
+
 # 整合台股功能
 from src.api.taiwan_endpoints import setup_taiwan_routes
 from src.frontend.market_switcher import get_market_switcher
@@ -177,6 +208,17 @@ try:
 except Exception as e:
     logger.warning(f"Failed to setup Charting Library routes: {str(e)}")
 
+# 提供策略分析儀表板
+@app.get("/dashboard")
+async def get_dashboard():
+    """提供策略分析儀表板"""
+    import os
+    dashboard_path = os.path.join(os.getcwd(), "strategy_analysis_dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path)
+    else:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
 # 初始化市場切換器和快取
 market_switcher_instance = get_market_switcher()
 unified_cache_instance = get_cache()
@@ -195,10 +237,31 @@ class BacktestRequest(BaseModel):
     end_date: str = Field(..., description="End date (YYYY-MM-DD)")
     strategy_name: str = Field(..., description="Strategy name (rsi_macd, ma_crossover)")
     strategy_params: Dict[str, Any] = Field(default_factory=dict, description="Strategy parameters")
-    initial_capital: float = Field(10000, description="Initial capital")
+
+class PatternSignalRequest(BaseModel):
+    symbol: str = Field(..., description="Stock symbol")
+    period: str = Field("3mo", description="Data period")
+
+class StrategyChatRequest(BaseModel):
+    message: str = Field(..., description="User message")
+    session_id: str = Field(..., description="Chat session ID")
+    symbol: Optional[str] = Field(None, description="Current stock symbol")
+
+class StrategyAnalysisRequest(BaseModel):
+    symbol: str = Field(..., description="Stock symbol")
+    strategy_request: str = Field(..., description="Strategy analysis request")
+    period: str = Field("3mo", description="Data period")
+
+class PatternBacktestRequest(BaseModel):
+    symbol: str = Field(..., description="Stock symbol")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: str = Field(..., description="End date (YYYY-MM-DD)")
+    min_confidence: float = Field(65.0, description="Minimum pattern confidence")
+    risk_reward_ratio: float = Field(1.5, description="Minimum risk reward ratio")
+    max_holding_days: int = Field(20, description="Maximum holding days")
+    stop_loss_pct: float = Field(0.08, description="Stop loss percentage")
+    initial_capital: float = Field(100000, description="Initial capital")
     commission: float = Field(0.001, description="Commission rate (0.001 = 0.1%)")
-    stop_loss_pct: float = Field(0.02, description="Stop loss percentage")
-    take_profit_pct: float = Field(0.06, description="Take profit percentage")
 
 class TradingSignalResponse(BaseModel):
     symbol: str
@@ -1682,6 +1745,232 @@ async def get_hybrid_chart_endpoint(symbol: str, theme: str = "dark"):
         logger.error(f"混合圖表生成錯誤 {symbol}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Hybrid chart generation failed: {str(e)}")
 
+@app.get("/chart/taiwan-widget/{symbol}")
+async def get_taiwan_widget_chart(symbol: str, theme: str = "dark"):
+    """
+    增強版台股TradingView Widget圖表
+    專門為台股優化的TradingView Widget實現，包含詳細的股票資訊和功能
+    """
+    try:
+        # 初始化增強版台股Widget
+        taiwan_widget = get_enhanced_taiwan_widget()
+        
+        # 創建增強版台股圖表
+        chart_html = taiwan_widget.create_enhanced_widget(
+            symbol=symbol,
+            theme=theme,
+            additional_studies=["MACD@tv-basicstudies"],  # 添加MACD指標
+            custom_config={
+                "save_image": True,
+                "withdateranges": True,
+                "hide_side_toolbar": False,
+                "disabled_features": [
+                    "header_saveload",
+                    "study_dialog_search_control"
+                ],
+                "enabled_features": [
+                    "move_logo_to_main_pane",
+                    "study_templates",
+                    "side_toolbar_in_fullscreen_mode"
+                ]
+            }
+        )
+        
+        # 獲取股票資訊用於header
+        stock_info = taiwan_widget.get_stock_info(symbol)
+        
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "X-Chart-Type": "Enhanced Taiwan Widget",
+            "X-Stock-Exchange": stock_info["exchange"],
+            "X-TradingView-Symbol": stock_info["tradingview_symbol"]
+        }
+        
+        return Response(content=chart_html.encode('utf-8'), media_type="text/html; charset=utf-8", headers=headers)
+        
+    except Exception as e:
+        logger.error(f"增強版台股Widget生成錯誤 {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Enhanced Taiwan widget generation failed: {str(e)}")
+
+@app.get("/api/taiwan-widget/stock-info/{symbol}")
+async def get_taiwan_stock_info(symbol: str):
+    """
+    獲取台股詳細資訊API
+    返回股票的基本資訊、產業分類、交易所等資料
+    """
+    try:
+        taiwan_widget = get_enhanced_taiwan_widget()
+        stock_info = taiwan_widget.get_stock_info(symbol)
+        
+        return {
+            "success": True,
+            "data": stock_info,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取台股資訊失敗 {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get Taiwan stock info: {str(e)}")
+
+@app.get("/api/taiwan-widget/symbol-search")
+async def search_taiwan_symbols(query: str, limit: int = 10):
+    """
+    台股符號搜尋API
+    支援按代號、名稱、產業搜尋台股
+    """
+    try:
+        taiwan_widget = get_enhanced_taiwan_widget()
+        results = []
+        
+        query_upper = query.upper()
+        for code, info in taiwan_widget.taiwan_stocks.items():
+            if (query_upper in code or 
+                query in info["name"] or
+                query in info["industry"]):
+                
+                stock_info = taiwan_widget.get_stock_info(code)
+                results.append({
+                    "code": code,
+                    "name": info["name"],
+                    "industry": info["industry"],
+                    "exchange": info["exchange"],
+                    "market_cap": info["market_cap"],
+                    "tradingview_symbol": stock_info["tradingview_symbol"],
+                    "full_symbol": stock_info["full_symbol"]
+                })
+                
+                if len(results) >= limit:
+                    break
+        
+        return {
+            "success": True,
+            "data": results,
+            "query": query,
+            "total": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"台股符號搜尋失敗 {query}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Taiwan symbol search failed: {str(e)}")
+
+@app.get("/chart/us-widget/{symbol}")
+async def get_us_widget_chart(symbol: str, theme: str = "dark"):
+    """
+    增強版美股TradingView Widget圖表
+    專門為美股優化的TradingView Widget實現，包含詳細的股票資訊和功能
+    """
+    try:
+        # 初始化增強版美股Widget
+        us_widget = get_enhanced_us_widget()
+        
+        # 創建增強版美股圖表
+        chart_html = us_widget.create_enhanced_widget(
+            symbol=symbol,
+            theme=theme,
+            additional_studies=["BB@tv-basicstudies"],  # 添加布林帶指標
+            custom_config={
+                "save_image": True,
+                "withdateranges": True,
+                "hide_side_toolbar": False,
+                "show_popup_button": True,
+                "disabled_features": [
+                    "header_saveload"
+                ],
+                "enabled_features": [
+                    "move_logo_to_main_pane",
+                    "study_templates",
+                    "side_toolbar_in_fullscreen_mode",
+                    "header_chart_type",
+                    "header_compare"
+                ]
+            }
+        )
+        
+        # 獲取股票資訊用於header
+        stock_info = us_widget.get_stock_info(symbol)
+        
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "X-Chart-Type": "Enhanced US Widget",
+            "X-Stock-Exchange": stock_info["exchange"],
+            "X-Stock-Industry": stock_info["industry"],
+            "X-Market-Cap": stock_info["market_cap"]
+        }
+        
+        return Response(content=chart_html.encode('utf-8'), media_type="text/html; charset=utf-8", headers=headers)
+        
+    except Exception as e:
+        logger.error(f"增強版美股Widget生成錯誤 {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Enhanced US widget generation failed: {str(e)}")
+
+@app.get("/api/us-widget/stock-info/{symbol}")
+async def get_us_stock_info(symbol: str):
+    """
+    獲取美股詳細資訊API
+    返回股票的基本資訊、行業分類、交易所等資料
+    """
+    try:
+        us_widget = get_enhanced_us_widget()
+        stock_info = us_widget.get_stock_info(symbol)
+        
+        return {
+            "success": True,
+            "data": stock_info,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取美股資訊失敗 {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get US stock info: {str(e)}")
+
+@app.get("/api/us-widget/symbol-search")
+async def search_us_symbols(query: str, limit: int = 10):
+    """
+    美股符號搜尋API
+    支援按代號、名稱、行業搜尋美股
+    """
+    try:
+        us_widget = get_enhanced_us_widget()
+        results = []
+        
+        query_upper = query.upper()
+        for code, info in us_widget.us_stocks.items():
+            if (query_upper in code or 
+                query.lower() in info["name"].lower() or
+                query.lower() in info["industry"].lower() or
+                query.lower() in info["sector"].lower()):
+                
+                results.append({
+                    "code": code,
+                    "name": info["name"],
+                    "industry": info["industry"],
+                    "sector": info["sector"],
+                    "exchange": info["exchange"],
+                    "market_cap": info["market_cap"],
+                    "tradingview_symbol": code,
+                    "full_symbol": code
+                })
+                
+                if len(results) >= limit:
+                    break
+        
+        return {
+            "success": True,
+            "data": results,
+            "query": query,
+            "total": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"美股符號搜尋失敗 {query}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"US symbol search failed: {str(e)}")
+
 @app.post("/clear-cache")
 async def clear_cache():
     """清除緩存，強制重新載入數據"""
@@ -1731,87 +2020,125 @@ async def debug_symbol_conversion(symbol: str):
 
 @app.get("/api/stock-data/{symbol}")
 async def get_stock_data_component(symbol: str):
-    """異步獲取股票數據組件 - 支持台股代號自動轉換"""
+    """異步獲取股票數據組件 - 支持台股代號自動轉換，使用真實數據"""
     try:
         # 將輸入的代號標準化（如 2330 -> 2330.TW）
         normalized_symbol = normalize_taiwan_symbol(symbol)
-        logger.info(f"Getting stock data for {symbol} -> {normalized_symbol}")
+        logger.info(f"Getting real stock data for {symbol} -> {normalized_symbol}")
         
-        # 返回完全安全的固定數據，避免任何計算
-        if normalized_symbol.endswith('.TW'):
-            # 台股數據 
-            if normalized_symbol == "2330.TW":
+        try:
+            # 嘗試獲取真實股價數據
+            if normalized_symbol.endswith('.TW'):
+                # 台股數據
+                data = tw_fetcher.get_stock_data(normalized_symbol, "1mo")
+            else:
+                # 美股數據  
+                data = us_fetcher.get_stock_data(normalized_symbol, "1mo")
+            
+            if data is not None and not data.empty:
+                # 計算技術指標
+                indicators = indicator_analyzer.analyze(data)
+                current_price = float(data['close'].iloc[-1]) if len(data) > 0 else 0
+                prev_price = float(data['close'].iloc[-2]) if len(data) > 1 else current_price
+                change_percent = ((current_price - prev_price) / prev_price) * 100 if prev_price != 0 else 0
+                current_volume = int(data['volume'].iloc[-1]) if len(data) > 0 else 0
+                
                 return {
-                    "current_price": 520,
-                    "change_percent": 1,
-                    "volume": 25000000,
-                    "rsi": 45,
-                    "market_open": False,
+                    "current_price": current_price,
+                    "change_percent": round(change_percent, 2),
+                    "volume": current_volume,
+                    "rsi": round(indicators.get('rsi', 50), 1),
+                    "market_open": not normalized_symbol.endswith('.TW'),  # 簡化的市場狀態
                     "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol[:-3]  # 顯示時移除.TW
-                }
-            elif normalized_symbol == "2317.TW":
-                return {
-                    "current_price": 105,
-                    "change_percent": -1,
-                    "volume": 15000000,
-                    "rsi": 55,
-                    "market_open": False,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol[:-3]
+                    "display_symbol": normalized_symbol[:-3] if normalized_symbol.endswith('.TW') else normalized_symbol
                 }
             else:
-                return {
-                    "current_price": 85,
-                    "change_percent": 0,
-                    "volume": 10000000,
-                    "rsi": 50,
-                    "market_open": False,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol[:-3]
-                }
-        else:
-            # 美股數據
-            if normalized_symbol == "AAPL":
-                return {
-                    "current_price": 185,
-                    "change_percent": 1,
-                    "volume": 45000000,
-                    "rsi": 52,
-                    "market_open": True,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol
-                }
-            elif normalized_symbol == "TSLA":
-                return {
-                    "current_price": 248,
-                    "change_percent": -1,
-                    "volume": 98000000,
-                    "rsi": 38,
-                    "market_open": True,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol
-                }
-            elif normalized_symbol == "GOOGL":
-                return {
-                    "current_price": 142,
-                    "change_percent": 0,
-                    "volume": 22000000,
-                    "rsi": 55,
-                    "market_open": True,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol
-                }
+                raise Exception("No data available")
+                
+        except Exception as data_error:
+            logger.warning(f"Failed to get real data for {normalized_symbol}: {str(data_error)}")
+            # 回落到預設數據
+            if normalized_symbol.endswith('.TW'):
+                # 台股數據 
+                if normalized_symbol == "2330.TW":
+                    return {
+                        "current_price": 520,
+                        "change_percent": 1,
+                        "volume": 25000000,
+                        "rsi": 45,
+                        "market_open": False,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol[:-3]  # 顯示時移除.TW
+                    }
+                elif normalized_symbol == "2317.TW":
+                    return {
+                        "current_price": 105,
+                        "change_percent": -1,
+                        "volume": 15000000,
+                        "rsi": 55,
+                        "market_open": False,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol[:-3]
+                    }
+                else:
+                    return {
+                        "current_price": 85,
+                        "change_percent": 0,
+                        "volume": 10000000,
+                        "rsi": 50,
+                        "market_open": False,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol[:-3]
+                    }
             else:
-                return {
-                    "current_price": 120,
-                    "change_percent": 0,
-                    "volume": 15000000,
-                    "rsi": 50,
-                    "market_open": True,
-                    "symbol": normalized_symbol,
-                    "display_symbol": normalized_symbol
-                }
+                # 美股數據 - 使用綜合分析API的價格作為回落
+                try:
+                    from src.api.main import comprehensive_stock_analysis
+                    analysis_result = await comprehensive_stock_analysis(normalized_symbol, "1mo", False)
+                    if analysis_result and 'current_price' in analysis_result:
+                        return {
+                            "current_price": analysis_result['current_price'],
+                            "change_percent": float(analysis_result.get('price_change', '0%').rstrip('%')),
+                            "volume": analysis_result.get('technical_indicators', {}).get('volume', 45000000),
+                            "rsi": round(analysis_result.get('technical_indicators', {}).get('rsi', 52), 1),
+                            "market_open": True,
+                            "symbol": normalized_symbol,
+                            "display_symbol": normalized_symbol
+                        }
+                except Exception:
+                    pass
+                    
+                # 最終回落到固定值
+                if normalized_symbol == "AAPL":
+                    return {
+                        "current_price": 185,
+                        "change_percent": 1,
+                        "volume": 45000000,
+                        "rsi": 38,
+                        "market_open": True,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol
+                    }
+                elif normalized_symbol == "GOOGL":
+                    return {
+                        "current_price": 142,
+                        "change_percent": 0,
+                        "volume": 22000000,
+                        "rsi": 55,
+                        "market_open": True,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol
+                    }
+                else:
+                    return {
+                        "current_price": 120,
+                        "change_percent": 0,
+                        "volume": 15000000,
+                        "rsi": 50,
+                        "market_open": True,
+                        "symbol": normalized_symbol,
+                        "display_symbol": normalized_symbol
+                    }
         
     except Exception as e:
         logger.error(f"Error fetching stock data for {symbol}: {str(e)}")
@@ -1952,6 +2279,325 @@ async def get_cache_stats():
         logger.error(f"獲取快取統計失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== 新增：技術分析與AI策略端點 ====================
+
+@app.post("/api/patterns/signals")
+async def get_pattern_signals(request: PatternSignalRequest):
+    """
+    獲取技術形態買進訊號
+    支援箱型、楔型、三角形、旗型等形態識別
+    """
+    try:
+        # 獲取股價數據
+        if request.symbol.endswith('.TW'):
+            df = tw_fetcher.get_stock_data(request.symbol, request.period)
+        else:
+            df = us_fetcher.get_stock_data(request.symbol, request.period)
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"無法獲取 {request.symbol} 的數據")
+        
+        # 生成買進訊號
+        signals = buy_signal_engine.generate_buy_signals(request.symbol, df)
+        
+        return {
+            "symbol": request.symbol,
+            "timestamp": datetime.now().isoformat(),
+            "signals": clean_for_json(signals),
+            "data_period": request.period,
+            "total_signals": len(signals.get('pattern_signals', [])),
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"形態訊號分析錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"分析失敗: {str(e)}")
+
+@app.post("/api/ai/strategy-chat/start")
+async def start_strategy_chat(request: StrategyAnalysisRequest):
+    """
+    開始AI策略聊天會話
+    """
+    try:
+        # 獲取股價數據和分析
+        if request.symbol.endswith('.TW'):
+            df = tw_fetcher.get_stock_data(request.symbol, request.period)
+        else:
+            df = us_fetcher.get_stock_data(request.symbol, request.period)
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"無法獲取 {request.symbol} 的數據")
+        
+        # 生成技術分析
+        signals = buy_signal_engine.generate_buy_signals(request.symbol, df)
+        
+        # 創建策略上下文
+        context = StrategyContext(
+            symbol=request.symbol,
+            current_price=float(df['close'].iloc[-1]),
+            pattern_signals=signals.get('pattern_signals', []),
+            technical_indicators=signals.get('indicator_signals', {}),
+            market_context={
+                "period": request.period,
+                "data_points": len(df),
+                "latest_date": df.index[-1].isoformat()
+            }
+        )
+        
+        # 創建會話ID
+        session_id = f"{request.symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # 開始聊天會話
+        welcome_message = strategy_chat.create_session(session_id, context)
+        
+        return {
+            "session_id": session_id,
+            "symbol": request.symbol,
+            "welcome_message": {
+                "role": welcome_message.role,
+                "content": welcome_message.content,
+                "timestamp": welcome_message.timestamp.isoformat(),
+                "message_id": welcome_message.message_id
+            },
+            "context_summary": signals.get('summary', ''),
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"AI策略聊天啟動錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"聊天啟動失敗: {str(e)}")
+
+@app.post("/api/ai/strategy-chat/send")
+async def send_chat_message(request: StrategyChatRequest):
+    """
+    發送訊息到AI策略聊天
+    """
+    try:
+        # 更新上下文（如果提供新股票）
+        context = None
+        if request.symbol:
+            df = us_fetcher.get_stock_data(request.symbol, "1mo") if not request.symbol.endswith('.TW') else tw_fetcher.get_stock_data(request.symbol, "1mo")
+            if df is not None and not df.empty:
+                signals = buy_signal_engine.generate_buy_signals(request.symbol, df)
+                context = StrategyContext(
+                    symbol=request.symbol,
+                    current_price=float(df['close'].iloc[-1]),
+                    pattern_signals=signals.get('pattern_signals', []),
+                    technical_indicators=signals.get('indicator_signals', {}),
+                    market_context={
+                        "period": "1mo",
+                        "latest_update": datetime.now().isoformat()
+                    }
+                )
+        
+        # 發送訊息
+        response_message = strategy_chat.send_message(request.session_id, request.message, context)
+        
+        return {
+            "session_id": request.session_id,
+            "response": {
+                "role": response_message.role,
+                "content": response_message.content,
+                "timestamp": response_message.timestamp.isoformat(),
+                "message_id": response_message.message_id
+            },
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"AI聊天訊息處理錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"訊息處理失敗: {str(e)}")
+
+@app.get("/api/ai/strategy-chat/history/{session_id}")
+async def get_chat_history(session_id: str):
+    """
+    獲取聊天歷史記錄
+    """
+    try:
+        history = strategy_chat.get_session_history(session_id)
+        
+        return {
+            "session_id": session_id,
+            "total_messages": len(history),
+            "history": history,
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取聊天歷史錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"獲取歷史失敗: {str(e)}")
+
+@app.post("/api/backtest/pattern-strategy")
+async def run_pattern_backtest(request: PatternBacktestRequest):
+    """
+    執行技術形態策略回測
+    """
+    try:
+        # 獲取歷史數據
+        start_date = datetime.strptime(request.start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(request.end_date, '%Y-%m-%d')
+        
+        if request.symbol.endswith('.TW'):
+            df = tw_fetcher.get_stock_data(request.symbol, "1y")  # Use longer period to ensure we have enough data
+        else:
+            df = us_fetcher.get_stock_data(request.symbol, "1y")  # Use longer period to ensure we have enough data
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"無法獲取 {request.symbol} 的歷史數據")
+        
+        # Filter data by date range - handle timezone aware dates
+        if df.index.tz is not None:
+            # Make start_date and end_date timezone aware
+            import pytz
+            start_date = start_date.replace(tzinfo=pytz.UTC)
+            end_date = end_date.replace(tzinfo=pytz.UTC)
+        df = df[(df.index >= start_date) & (df.index <= end_date)]
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"指定日期範圍內無數據：{request.start_date} 至 {request.end_date}")
+        
+        # 設置策略參數
+        strategy = PatternBasedStrategy(
+            min_confidence=request.min_confidence,
+            risk_reward_ratio=request.risk_reward_ratio,
+            max_holding_days=request.max_holding_days,
+            stop_loss_pct=request.stop_loss_pct
+        )
+        
+        # 設置回測器
+        backtester = StrategyBacktester(
+            initial_capital=request.initial_capital,
+            commission=request.commission
+        )
+        
+        # 執行回測
+        result = backtester.run_backtest(df, strategy, request.symbol, "Pattern Strategy")
+        
+        # 生成詳細報告
+        report = performance_analyzer.generate_performance_report(result)
+        
+        return {
+            "symbol": request.symbol,
+            "backtest_period": f"{request.start_date} to {request.end_date}",
+            "strategy_params": {
+                "min_confidence": request.min_confidence,
+                "risk_reward_ratio": request.risk_reward_ratio,
+                "max_holding_days": request.max_holding_days,
+                "stop_loss_pct": request.stop_loss_pct,
+                "initial_capital": request.initial_capital,
+                "commission": request.commission
+            },
+            "performance_summary": {
+                "total_return": f"{result.total_return:.2%}",
+                "annual_return": f"{result.annual_return:.2%}",
+                "max_drawdown": f"{result.max_drawdown:.2%}",
+                "sharpe_ratio": f"{result.sharpe_ratio:.2f}",
+                "win_rate": f"{result.win_rate:.2%}",
+                "total_trades": result.total_trades,
+                "profit_factor": f"{result.profit_factor:.2f}"
+            },
+            "detailed_report": clean_for_json(report),
+            "equity_curve": result.equity_curve.to_dict(),
+            "trade_count": len(result.trades),
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"形態策略回測錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"回測失敗: {str(e)}")
+
+@app.get("/api/analysis/comprehensive/{symbol}")
+async def get_comprehensive_analysis(symbol: str, period: str = "3mo"):
+    """
+    獲取綜合技術分析（包含實際形態訊號）
+    """
+    try:
+        # 獲取股價數據
+        data_fetcher = get_data_fetcher()
+        df = await data_fetcher.get_stock_data(symbol, period)
+        
+        if df is None or df.empty:
+            return {"error": f"無法獲取 {symbol} 的數據", "success": False}
+        
+        # 獲取當前價格信息
+        current_price = float(df['close'].iloc[-1])
+        prev_price = float(df['close'].iloc[-2]) if len(df) >= 2 else current_price
+        price_change_pct = ((current_price - prev_price) / prev_price * 100) if prev_price != 0 else 0
+        
+        # 計算技術指標
+        rsi_values = calculate_rsi(df['close'])
+        current_rsi = float(rsi_values.iloc[-1]) if not rsi_values.empty else 50.0
+        ma20 = float(df['close'].rolling(window=20).mean().iloc[-1])
+        volume_avg = int(df['volume'].mean())
+        
+        # 生成形態訊號
+        from src.analysis.pattern_signals import BuySignalEngine
+        signal_engine = BuySignalEngine()
+        signal_result = signal_engine.generate_buy_signals(symbol, df)
+        
+        # 提取形態訊號
+        pattern_signals = []
+        if 'pattern_signals' in signal_result and signal_result['pattern_signals']:
+            for signal in signal_result['pattern_signals'][:3]:  # 取前3個最強訊號
+                pattern_signals.append({
+                    "pattern_type": signal.get('pattern_type', '未知形態'),
+                    "description": signal.get('description', '形態分析'),
+                    "confidence": signal.get('confidence', 0),
+                    "entry_price": signal.get('entry_price', current_price),
+                    "target_price": signal.get('target_price', current_price * 1.05),
+                    "stop_loss": signal.get('stop_loss', current_price * 0.95),
+                    "risk_reward_ratio": signal.get('risk_reward_ratio', 1.0)
+                })
+        
+        # 如果沒有檢測到形態，添加基於技術指標的訊號
+        if not pattern_signals:
+            if current_rsi < 35:
+                pattern_signals.append({
+                    "pattern_type": "technical_oversold",
+                    "description": "RSI超賣訊號",
+                    "confidence": 65,
+                    "entry_price": current_price,
+                    "target_price": current_price * 1.08,
+                    "stop_loss": current_price * 0.94,
+                    "risk_reward_ratio": 1.33
+                })
+            elif current_price > ma20:
+                pattern_signals.append({
+                    "pattern_type": "ma_breakout",  
+                    "description": "突破20日均線",
+                    "confidence": 55,
+                    "entry_price": current_price,
+                    "target_price": current_price * 1.06,
+                    "stop_loss": ma20 * 0.98,
+                    "risk_reward_ratio": 1.5
+                })
+        
+        response_data = {
+            "symbol": symbol,
+            "analysis_timestamp": datetime.now().isoformat(),
+            "current_price": current_price,
+            "price_change": f"{price_change_pct:+.2f}%",
+            "technical_indicators": {
+                "rsi": current_rsi,
+                "ma20": ma20,
+                "volume_avg": volume_avg
+            },
+            "pattern_analysis": {
+                "signals": pattern_signals,
+                "summary": f"RSI: {current_rsi:.1f} | MA20: ${ma20:.2f} | 檢測到 {len(pattern_signals)} 個訊號"
+            },
+            "strategy_backtest": {
+                "error": "回測功能維護中"
+            },
+            "success": True
+        }
+        
+        return response_data
+        
+    except Exception as e:
+        logger.error(f"綜合分析錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"分析失敗: {str(e)}")
+
 # Error handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
@@ -1967,6 +2613,94 @@ async def general_exception_handler(request, exc):
         status_code=500,
         content={"error": "Internal server error", "status_code": 500}
     )
+
+@app.get("/api/dashboard/signals/{symbol}")
+async def get_dashboard_signals(symbol: str, period: str = "3mo"):
+    """
+    獲取儀表板所需的即時交易訊號
+    """
+    try:
+        # 獲取股價數據
+        if symbol.endswith('.TW'):
+            df = tw_fetcher.get_stock_data(symbol, period)
+        else:
+            df = us_fetcher.get_stock_data(symbol, period)
+        
+        if df is None or df.empty:
+            return {"success": False, "error": f"無法獲取 {symbol} 的數據"}
+        
+        # 計算技術指標
+        indicators = indicator_analyzer.analyze(df)
+        
+        # 生成訊號
+        current_rsi = indicators.get('rsi', 50)
+        current_macd = indicators.get('macd', 0)
+        current_macd_signal = indicators.get('macd_signal', 0)
+        
+        # RSI訊號
+        if current_rsi < 30:
+            rsi_signal = "BUY"
+        elif current_rsi > 70:
+            rsi_signal = "SELL"
+        else:
+            rsi_signal = "NEUTRAL"
+        
+        # MACD訊號
+        if current_macd > current_macd_signal:
+            macd_signal = "BUY"
+        else:
+            macd_signal = "SELL"
+        
+        # 移動平均訊號
+        sma_20 = indicators.get('sma_20', 0)
+        current_price = float(df['close'].iloc[-1])
+        
+        if current_price > sma_20:
+            ma_signal = "BUY"
+        else:
+            ma_signal = "SELL"
+        
+        # 綜合訊號
+        buy_signals = sum([1 for sig in [rsi_signal, macd_signal, ma_signal] if sig == "BUY"])
+        sell_signals = sum([1 for sig in [rsi_signal, macd_signal, ma_signal] if sig == "SELL"])
+        
+        if buy_signals >= 2:
+            overall_signal = "BUY"
+        elif sell_signals >= 2:
+            overall_signal = "SELL"
+        else:
+            overall_signal = "NEUTRAL"
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "timestamp": datetime.now().isoformat(),
+            "overall_signal": overall_signal,
+            "rsi_signal": rsi_signal,
+            "macd_signal": macd_signal, 
+            "ma_signal": ma_signal,
+            "rsi": round(current_rsi, 2),
+            "current_price": current_price,
+            "sma_20": round(sma_20, 2),
+            "macd": round(current_macd, 4),
+            "signal_strength": max(buy_signals, sell_signals)
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取儀表板訊號錯誤: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/dashboard")
+async def serve_dashboard():
+    """
+    提供策略分析儀表板
+    """
+    try:
+        with open("strategy_analysis_dashboard.html", "r", encoding="utf-8") as f:
+            content = f.read()
+        return Response(content=content, media_type="text/html")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="儀表板文件不存在")
 
 if __name__ == "__main__":
     import uvicorn

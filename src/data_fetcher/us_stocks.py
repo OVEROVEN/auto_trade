@@ -124,6 +124,19 @@ class USStockDataFetcher:
         
         return results
     
+    def get_stock_data(self, symbol: str, period: str = "3mo") -> pd.DataFrame:
+        """
+        Get stock data - wrapper for fetch_historical_data to match API expectations
+        
+        Args:
+            symbol: Stock symbol
+            period: Data period
+            
+        Returns:
+            DataFrame with OHLCV data
+        """
+        return self.fetch_historical_data(symbol, period)
+    
     def get_real_time_quote(self, symbol: str) -> Optional[RealTimeQuote]:
         """
         Get real-time quote for a symbol.

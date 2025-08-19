@@ -101,6 +101,32 @@ class TWStockDataFetcher:
             logger.error(f"Error fetching Taiwan stock data for {symbol}: {str(e)}")
             return pd.DataFrame()
     
+    def get_stock_data(self, symbol: str, period: str = "3mo") -> pd.DataFrame:
+        """
+        Get stock data - wrapper for fetch_historical_data to match API expectations
+        
+        Args:
+            symbol: Stock symbol
+            period: Data period (converted to date range)
+            
+        Returns:
+            DataFrame with OHLCV data
+        """
+        # Convert period to date range
+        end_date = datetime.now()
+        if period == "1mo":
+            start_date = end_date - timedelta(days=30)
+        elif period == "3mo":
+            start_date = end_date - timedelta(days=90)
+        elif period == "6mo":
+            start_date = end_date - timedelta(days=180)
+        elif period == "1y":
+            start_date = end_date - timedelta(days=365)
+        else:
+            start_date = end_date - timedelta(days=90)  # Default to 3 months
+        
+        return self.fetch_historical_data(symbol, start_date, end_date)
+    
     def _fetch_via_yfinance(
         self, 
         symbol: str, 

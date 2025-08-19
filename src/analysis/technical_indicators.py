@@ -448,6 +448,43 @@ class IndicatorAnalyzer:
             strengths['trend'] = min(latest['adx'] / 50.0, 1.0)  # Normalize to 50
         
         return strengths
+    
+    def analyze(self, data: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Comprehensive analysis of technical indicators
+        
+        Args:
+            data: DataFrame with OHLCV data
+            
+        Returns:
+            Dictionary with indicator values and analysis
+        """
+        if data.empty:
+            return {}
+        
+        # Calculate all indicators
+        df_with_indicators = self.calculate_all_indicators(data)
+        
+        # Get latest values
+        latest = df_with_indicators.iloc[-1] if len(df_with_indicators) > 0 else pd.Series()
+        
+        return {
+            'rsi': latest.get('rsi', 50),
+            'macd': latest.get('macd', 0),
+            'macd_signal': latest.get('macd_signal', 0),
+            'macd_histogram': latest.get('macd_histogram', 0),
+            'sma_20': latest.get('sma_20', 0),
+            'sma_50': latest.get('sma_50', 0),
+            'ema_12': latest.get('ema_12', 0),
+            'ema_26': latest.get('ema_26', 0),
+            'bb_upper': latest.get('bb_upper', 0),
+            'bb_middle': latest.get('bb_middle', 0),
+            'bb_lower': latest.get('bb_lower', 0),
+            'stoch_k': latest.get('stoch_k', 50),
+            'stoch_d': latest.get('stoch_d', 50),
+            'williams_r': latest.get('williams_r', -50),
+            'current_price': float(data['close'].iloc[-1]) if len(data) > 0 else 0
+        }
 
 # Example usage
 if __name__ == "__main__":
