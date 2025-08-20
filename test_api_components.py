@@ -81,10 +81,10 @@ def test_data_processing():
         print(f"Engine created, starting backtest...")
         results = engine.run_backtest(strategy, data_with_indicators, symbol)
         
-        print(f"✓ SUCCESS! Total return: {results.total_return_pct:.2%}")
+        print(f"SUCCESS! Total return: {results.total_return_pct:.2%}")
         
     except Exception as e:
-        print(f"✗ ERROR: {str(e)}")
+        print(f"ERROR: {str(e)}")
         import traceback
         traceback.print_exc()
 

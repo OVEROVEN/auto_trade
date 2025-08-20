@@ -357,6 +357,104 @@ git push origin v1.2.0
 3. **功能完成後**: `git add -A && git commit -m "描述性訊息"`
 4. **重大版本**: 創建標籤標記里程碑
 
+## 🧪 MCP 工具測試與驗證指南
+
+### 🎯 使用MCP工具進行全面測試
+善用Claude Code的MCP (Model Context Protocol) 工具套件來測試和驗證專案功能：
+
+#### 🌐 Web測試工具 (Playwright MCP)
+```bash
+# 使用Playwright MCP工具測試TradingView圖表
+# 1. 啟動API服務
+uv run python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+
+# 2. 使用Claude Code的瀏覽器工具訪問圖表端點
+# 透過MCP Playwright工具可以：
+# - 自動截圖圖表輸出
+# - 測試互動元素
+# - 驗證圖表渲染
+# - 檢查響應時間
+```
+
+**MCP Playwright功能：**
+- `browser_navigate`: 訪問本地API端點
+- `browser_snapshot`: 獲取圖表頁面快照  
+- `browser_click`: 測試互動元素
+- `browser_evaluate`: 執行JavaScript驗證
+- `browser_take_screenshot`: 截圖保存測試結果
+
+#### 📊 API端點測試範例
+使用MCP瀏覽器工具測試關鍵端點：
+
+```bash
+# 1. 健康檢查
+http://localhost:8000/health
+
+# 2. 股票分析API
+http://localhost:8000/analyze/AAPL
+
+# 3. TradingView自定義圖表
+http://localhost:8000/chart/custom/AAPL
+
+# 4. 台股API測試
+http://localhost:8000/api/taiwan/market-overview
+
+# 5. 即時WebSocket (需要特殊測試)
+ws://localhost:8000/stream/AAPL
+```
+
+#### 🔍 自動化測試流程
+1. **啟動服務**: 使用`browser_navigate`啟動測試
+2. **端點驗證**: 逐一訪問API端點
+3. **響應檢查**: 使用`browser_evaluate`檢查JSON響應
+4. **圖表測試**: 截圖比較視覺化輸出
+5. **錯誤處理**: 測試異常情況
+
+#### 📱 移動端和響應式測試
+```bash
+# 使用MCP調整瀏覽器視窗大小測試響應式設計
+browser_resize(width=375, height=667)  # iPhone視圖
+browser_resize(width=768, height=1024) # iPad視圖
+browser_resize(width=1920, height=1080) # 桌面視圖
+```
+
+#### 🎨 視覺化驗證
+- **圖表渲染測試**: 確保K線圖、技術指標正確顯示
+- **色彩主題測試**: 驗證暗色/亮色模式
+- **數據精確性**: 對比API數據與圖表顯示
+- **性能測試**: 測量頁面載入時間
+
+#### ⚡ 實時測試建議
+```bash
+# 1. 並發測試 - 同時開啟多個標籤頁
+browser_tab_new()
+browser_tab_select(0)  # AAPL
+browser_tab_select(1)  # TSLA
+browser_tab_select(2)  # 2330.TW
+
+# 2. 長時間運行測試
+browser_wait_for(time=30)  # 等待30秒測試穩定性
+
+# 3. 網路錯誤模擬
+# 斷網狀態下測試錯誤處理
+```
+
+### 🎯 測試檢查清單
+- [ ] ✅ API健康檢查通過
+- [ ] ✅ 股票數據獲取正常
+- [ ] ✅ 技術指標計算正確
+- [ ] ✅ AI分析功能運作
+- [ ] ✅ 圖表渲染完整
+- [ ] ✅ WebSocket連接穩定
+- [ ] ✅ 錯誤處理適當
+- [ ] ✅ 性能表現良好
+
+### 🔧 MCP工具使用技巧
+1. **批量測試**: 一次開啟多個測試場景
+2. **截圖對比**: 保存基準截圖用於迴歸測試
+3. **自動化報告**: 結合測試結果生成報告
+4. **持續監控**: 定期執行完整測試套件
+
 ## 🎯 Next Development Areas
 
 1. **Cloud Deployment**: Terraform scripts (mentioned as "coming soon")
@@ -364,3 +462,4 @@ git push origin v1.2.0
 3. **Custom Strategy Registration**: Automated strategy factory updates
 4. **Monitoring Dashboard**: Prometheus + Grafana integration
 5. **Enhanced AI**: More sophisticated recommendation algorithms
+6. **MCP Integration**: 深度整合MCP工具用於持續測試和監控

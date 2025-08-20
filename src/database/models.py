@@ -141,7 +141,7 @@ class AIAnalysis(Base):
     risk_score = Column(Float)
     
     # Model info
-    model_used = Column(String(50), default='gpt-4')
+    model_used = Column(String(50), default='gpt-3.5-turbo')
     processing_time = Column(Float)  # Processing time in seconds
     
     __table_args__ = (

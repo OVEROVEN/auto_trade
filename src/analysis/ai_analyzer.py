@@ -418,7 +418,7 @@ class OpenAIAnalyzer:
         """Get response from OpenAI API."""
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",  # 更快的回應速度
                 messages=[
                     {"role": "system", "content": "You are an expert financial analyst and trader. Provide accurate, data-driven analysis."},
                     {"role": "user", "content": prompt}

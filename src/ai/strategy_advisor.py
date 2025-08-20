@@ -445,7 +445,7 @@ class StrategyAdvisor:
         """調用OpenAI API"""
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",  # 使用GPT-4獲得更好的分析能力
+                model="gpt-3.5-turbo",  # 使用GPT-3.5 Turbo，更快更經濟
                 messages=messages,
                 max_tokens=2000,
                 temperature=0.7,

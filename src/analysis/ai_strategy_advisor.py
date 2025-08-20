@@ -50,7 +50,7 @@ class AIStrategyAdvisor:
     def __init__(self):
         """初始化 AI 策略顧問"""
         self.client = None
-        self.model = "gpt-4"
+        self.model = "gpt-3.5-turbo"  # 更快更便宜的模型，適合交易分析
         
         if OPENAI_AVAILABLE and settings.openai_api_key:
             try:
