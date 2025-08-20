@@ -91,3 +91,17 @@ coverage/
 # Backup files
 *.bak
 *.backup
+
+# Windows specific
+.env.windows
+NUL
+
+# MCP and testing artifacts
+.playwright-mcp/
+auto_trade/
+fix_dependencies.py
+test_ai_models.py
+verify_dependencies.py
+
+# Project reports
+PROJECT_ISSUES_REPORT.md

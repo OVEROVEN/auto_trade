@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 import openai
 from openai import OpenAI
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +36,17 @@ class StrategyContext:
     recent_news: Optional[List[str]] = None
 
 class StrategyAdvisor:
-    """AI策略顧問"""
+    """AI策略顧問 - 支援智能模型切換"""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model_preference: Optional[str] = None):
         """
         初始化AI策略顧問
         
         Args:
             api_key: OpenAI API密鑰，如果未提供則從環境變量獲取
+            model_preference: 模型偏好 ('basic', 'advanced', 'vision', None為自動選擇)
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY") or settings.openai_api_key
         if not self.api_key:
             logger.warning("OpenAI API key not found. AI features will be disabled.")
             self.client = None
@@ -56,8 +58,74 @@ class StrategyAdvisor:
                 logger.error(f"OpenAI client initialization failed: {e}")
                 self.client = None
         
+        # 模型配置
+        self.model_preference = model_preference
+        self.models = {
+            'basic': settings.ai_model_basic,
+            'advanced': settings.ai_model_advanced, 
+            'vision': settings.ai_model_vision
+        }
+        
         self.conversation_history: List[ChatMessage] = []
         self.system_prompt = self._create_system_prompt()
+        
+        logger.info(f"StrategyAdvisor initialized with models: {self.models}")
+    
+    def get_model_for_task(self, task_type: str = 'chat') -> str:
+        """
+        根據任務類型獲取最適合的模型
+        
+        Args:
+            task_type: 任務類型 ('chat', 'backtest', 'analysis', 'vision')
+            
+        Returns:
+            模型名稱
+        """
+        # 如果設定了固定偏好，使用該模型
+        if self.model_preference and self.model_preference in self.models:
+            return self.models[self.model_preference]
+        
+        # 如果關閉自動選擇，使用基礎模型
+        if not settings.ai_auto_model_selection:
+            return self.models['basic']
+        
+        # 根據任務自動選擇模型
+        task_model_map = {
+            'chat': 'basic',           # 一般對話使用基礎模型
+            'backtest': 'advanced',    # 回測分析使用高級模型
+            'analysis': 'advanced',    # 複雜分析使用高級模型
+            'strategy': 'advanced',    # 策略規劃使用高級模型
+            'vision': 'vision',        # 圖表分析使用視覺模型
+            'optimization': 'advanced' # 優化建議使用高級模型
+        }
+        
+        model_type = task_model_map.get(task_type, 'basic')
+        selected_model = self.models[model_type]
+        
+        logger.info(f"Auto-selected model '{selected_model}' for task type '{task_type}'")
+        return selected_model
+    
+    def set_model_preference(self, preference: str) -> bool:
+        """
+        設定模型偏好
+        
+        Args:
+            preference: 模型偏好 ('basic', 'advanced', 'vision', 'auto')
+            
+        Returns:
+            是否設定成功
+        """
+        if preference == 'auto':
+            self.model_preference = None
+            logger.info("Model preference set to auto-selection")
+            return True
+        elif preference in self.models:
+            self.model_preference = preference
+            logger.info(f"Model preference set to {preference} ({self.models[preference]})")
+            return True
+        else:
+            logger.warning(f"Invalid model preference: {preference}")
+            return False
         
     def _create_system_prompt(self) -> str:
         """創建系統提示詞"""
@@ -108,11 +176,11 @@ class StrategyAdvisor:
             # 創建上下文分析
             context_analysis = self._create_context_analysis(context)
             
-            # 生成開場分析
+            # 生成開場分析 - 使用高級模型進行策略分析
             response = self._call_openai([
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": f"請分析以下股票數據並提供策略建議：\n\n{context_analysis}"}
-            ])
+            ], task_type='strategy')
             
             assistant_message = ChatMessage(
                 role="assistant",
@@ -172,8 +240,8 @@ class StrategyAdvisor:
                     "content": msg.content
                 })
             
-            # 獲取AI回應
-            response = self._call_openai(messages)
+            # 獲取AI回應 - 一般對話使用基礎模型
+            response = self._call_openai(messages, task_type='chat')
             
             assistant_message = ChatMessage(
                 role="assistant",
@@ -224,10 +292,11 @@ class StrategyAdvisor:
 請提供具體、可執行的建議。
 """
             
+            # 策略分析使用高級模型，獲得更精確的建議
             response = self._call_openai([
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": strategy_prompt}
-            ])
+            ], task_type='strategy')
             
             return ChatMessage(
                 role="assistant",
@@ -296,10 +365,11 @@ class StrategyAdvisor:
 請提供專業、實用的分析意見。
 """
             
+            # 回測分析使用高級模型，確保分析品質和準確性
             response = self._call_openai([
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": analysis_prompt}
-            ])
+            ], task_type='backtest')
             
             return ChatMessage(
                 role="assistant",
@@ -441,23 +511,36 @@ class StrategyAdvisor:
             logger.error(f"格式化回測數據錯誤: {e}")
             return f"回測數據: {json.dumps(backtest_data, indent=2, ensure_ascii=False)}"
     
-    def _call_openai(self, messages: List[Dict[str, str]]) -> str:
-        """調用OpenAI API"""
+    def _call_openai(self, messages: List[Dict[str, str]], task_type: str = 'chat') -> str:
+        """
+        調用OpenAI API - 支援智能模型選擇
+        
+        Args:
+            messages: 對話訊息列表
+            task_type: 任務類型，用於選擇最適合的模型
+            
+        Returns:
+            AI回應內容
+        """
         try:
+            # 根據任務類型選擇最適合的模型
+            selected_model = self.get_model_for_task(task_type)
+            
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",  # 使用GPT-3.5 Turbo，更快更經濟
+                model=selected_model,
                 messages=messages,
-                max_tokens=2000,
-                temperature=0.7,
+                max_tokens=settings.ai_max_tokens,
+                temperature=settings.ai_temperature,
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0
             )
             
+            logger.info(f"OpenAI API call successful using model: {selected_model}")
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            logger.error(f"OpenAI API調用錯誤: {e}")
+            logger.error(f"OpenAI API調用錯誤 (model: {selected_model}): {e}")
             raise
     
     def _create_fallback_message(self, content: str) -> ChatMessage:

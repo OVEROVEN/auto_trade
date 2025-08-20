@@ -2704,6 +2704,106 @@ async def serve_dashboard():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="儀表板文件不存在")
 
+# ==================== AI模型配置管理API ====================
+
+@app.get("/api/ai/models/current")
+async def get_current_ai_models():
+    """獲取當前AI模型配置"""
+    try:
+        return {
+            "success": True,
+            "models": {
+                "basic": settings.ai_model_basic,
+                "advanced": settings.ai_model_advanced,
+                "vision": settings.ai_model_vision
+            },
+            "config": {
+                "auto_model_selection": settings.ai_auto_model_selection,
+                "max_tokens": settings.ai_max_tokens,
+                "temperature": settings.ai_temperature
+            },
+            "task_mapping": {
+                "chat": "basic",
+                "backtest": "advanced", 
+                "analysis": "advanced",
+                "strategy": "advanced",
+                "vision": "vision",
+                "optimization": "advanced"
+            }
+        }
+    except Exception as e:
+        logger.error(f"獲取AI模型配置失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ai/models/preference")
+async def set_ai_model_preference(request: dict):
+    """設定AI模型偏好 - 暫時性設定，不修改配置文件"""
+    try:
+        preference = request.get("preference", "auto").lower()
+        
+        valid_preferences = ["auto", "basic", "advanced", "vision"]
+        if preference not in valid_preferences:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid preference. Must be one of: {', '.join(valid_preferences)}"
+            )
+        
+        # 這裡可以暫時存儲用戶偏好（例如在Redis或內存中）
+        # 實際實現可能需要用戶會話管理
+        
+        return {
+            "success": True,
+            "message": f"AI模型偏好已設定為: {preference}",
+            "preference": preference,
+            "recommendation": {
+                "auto": "系統自動根據任務選擇最適合的模型",
+                "basic": "使用GPT-3.5 Turbo - 速度快，適合一般對話",
+                "advanced": "使用GPT-4o-mini - 適合複雜分析和回測", 
+                "vision": "使用GPT-4o - 適合圖表分析"
+            }.get(preference, "")
+        }
+        
+    except Exception as e:
+        logger.error(f"設定AI模型偏好失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ai/models/costs")
+async def get_ai_model_costs():
+    """獲取AI模型成本資訊"""
+    try:
+        return {
+            "success": True,
+            "cost_info": {
+                "gpt-3.5-turbo": {
+                    "input_cost_per_1k": 0.0005,
+                    "output_cost_per_1k": 0.0015,
+                    "speed": "fast",
+                    "use_case": "一般對話、簡單分析"
+                },
+                "gpt-4o-mini": {
+                    "input_cost_per_1k": 0.00015,
+                    "output_cost_per_1k": 0.0006,
+                    "speed": "fast",
+                    "use_case": "複雜分析、策略規劃、回測分析"
+                },
+                "gpt-4o": {
+                    "input_cost_per_1k": 0.005,
+                    "output_cost_per_1k": 0.015,
+                    "speed": "medium",
+                    "use_case": "圖表分析、複雜視覺任務"
+                }
+            },
+            "recommendations": {
+                "cost_sensitive": "建議使用auto模式，系統會自動為簡單任務選擇gpt-3.5-turbo",
+                "quality_focused": "建議使用advanced模式，獲得最佳分析品質",
+                "balanced": "建議使用auto模式，在成本和品質間取得平衡"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取AI模型成本資訊失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

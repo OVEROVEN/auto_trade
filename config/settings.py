@@ -9,6 +9,20 @@ class Settings(BaseSettings):
     alpha_vantage_api_key: Optional[str] = Field(None, env="ALPHA_VANTAGE_API_KEY")
     anthropic_api_key: Optional[str] = Field(None, env="ANTHROPIC_API_KEY")
     
+    # AI Model Configuration
+    # 基礎分析模型 - 速度快，成本低，適合一般聊天和簡單分析
+    ai_model_basic: str = Field("gpt-3.5-turbo", env="AI_MODEL_BASIC")
+    # 高級分析模型 - 回測、複雜策略分析使用，更強推理能力
+    ai_model_advanced: str = Field("gpt-4o-mini", env="AI_MODEL_ADVANCED")
+    # 圖表視覺分析模型 - 圖表識別和視覺分析
+    ai_model_vision: str = Field("gpt-4o", env="AI_MODEL_VISION")
+    # 是否自動根據任務選擇最適合的模型
+    ai_auto_model_selection: bool = Field(True, env="AI_AUTO_MODEL_SELECTION")
+    # AI回應最大tokens數
+    ai_max_tokens: int = Field(2000, env="AI_MAX_TOKENS")
+    # AI回應的創意度參數 (0.0-1.0)
+    ai_temperature: float = Field(0.7, env="AI_TEMPERATURE")
+    
     # Database Configuration
     database_url: str = Field(..., env="DATABASE_URL")
     database_host: str = Field("localhost", env="DATABASE_HOST")
