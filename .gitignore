@@ -105,3 +105,22 @@ verify_dependencies.py
 
 # Project reports
 PROJECT_ISSUES_REPORT.md
+
+# Frontend / Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/build/
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Next.js build output
+frontend/.next
+frontend/out
