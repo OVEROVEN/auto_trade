@@ -116,6 +116,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Import and include authentication routes
+try:
+    from src.auth.auth_endpoints import auth_router
+    app.include_router(auth_router)
+    logger.info("✅ 認證模塊載入成功")
+except ImportError as e:
+    logger.warning(f"⚠️ 認證模塊載入失敗: {e}")
+except Exception as e:
+    logger.error(f"❌ 認證模塊初始化錯誤: {e}")
+
+# Mount frontend static files (for production deployment)
+import os
+if os.path.exists("frontend/.next"):
+    app.mount("/_next", StaticFiles(directory="frontend/.next"), name="next-static")
+    # Note: No public directory in this project structure
+
 # Initialize analyzers
 us_fetcher = USStockDataFetcher()
 tw_fetcher = TWStockDataFetcher()
@@ -152,10 +168,13 @@ stock_cache = SimpleCache(ttl_seconds=300)  # 5分鐘緩存
 # Initialize AI analyzer if API key is available
 ai_analyzer = None
 try:
+    logger.info("🔍 Attempting to initialize AI analyzer...")
     ai_analyzer = OpenAIAnalyzer()
-    logger.info("AI analyzer initialized successfully")
+    logger.info("✅ AI analyzer initialized successfully")
 except Exception as e:
-    logger.warning(f"AI analyzer not available: {str(e)}")
+    logger.error(f"❌ AI analyzer not available: {str(e)}")
+    import traceback
+    traceback.print_exc()
 
 # Initialize AI strategy advisor
 ai_strategy_advisor = None
@@ -230,6 +249,7 @@ class StockAnalysisRequest(BaseModel):
     period: str = Field("3mo", description="Data period (1d, 5d, 1mo, 3mo, 6mo, 1y, etc.)")
     include_ai: bool = Field(True, description="Include AI analysis")
     include_patterns: bool = Field(True, description="Include pattern recognition")
+    language: str = Field("en", description="Response language (en, zh-TW, zh-CN)")
 
 class BacktestRequest(BaseModel):
     symbol: str = Field(..., description="Symbol to backtest")
@@ -446,7 +466,8 @@ async def analyze_stock(symbol: str, request: StockAnalysisRequest):
         if request.include_ai and ai_analyzer:
             try:
                 ai_result = await ai_analyzer.analyze_technical_data(
-                    symbol, data_with_indicators, technical_indicators, patterns
+                    symbol, data_with_indicators, technical_indicators, patterns, 
+                    context=None, language=request.language
                 )
                 ai_analysis = {
                     "recommendation": ai_result.recommendation,
@@ -455,7 +476,8 @@ async def analyze_stock(symbol: str, request: StockAnalysisRequest):
                     "key_factors": ai_result.key_factors,
                     "price_target": ai_result.price_target,
                     "stop_loss": ai_result.stop_loss,
-                    "risk_score": ai_result.risk_score
+                    "risk_score": ai_result.risk_score,
+                    "entry_price": ai_result.entry_price
                 }
             except Exception as e:
                 logger.error(f"AI analysis failed: {str(e)}")
@@ -1496,7 +1518,8 @@ async def get_custom_trading_chart(
     theme: str = "dark",
     strategy: str = "pattern_trading",
     include_ai: bool = True,
-    fast_mode: bool = True
+    fast_mode: bool = True,
+    language: str = "en"
 ):
     """
     獲取定制的TradingView圖表，包含K線、成交量、RSI和AI建議
@@ -1579,7 +1602,8 @@ async def get_custom_trading_chart(
                     
                     # 快速 AI 分析
                     ai_result = await ai_analyzer.analyze_technical_data(
-                        symbol, data_with_indicators, technical_indicators, {}
+                        symbol, data_with_indicators, technical_indicators, {}, 
+                        context=None, language=language
                     )
                     
                     # 基於AI分析生成建議區間
@@ -2803,6 +2827,31 @@ async def get_ai_model_costs():
     except Exception as e:
         logger.error(f"獲取AI模型成本資訊失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Serve frontend for root path in production
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    """Serve the Next.js frontend for production deployment"""
+    if os.path.exists("frontend/.next"):
+        # In production, serve the built Next.js app
+        frontend_file = "frontend/.next/server/app/page.js"  # This is a simplified approach
+        if os.path.exists("frontend/public/index.html"):
+            return FileResponse("frontend/public/index.html")
+        else:
+            return JSONResponse(content={
+                "message": "AI Trading System API",
+                "status": "running",
+                "frontend": "available",
+                "docs": "/docs"
+            })
+    else:
+        # Development mode - API only
+        return JSONResponse(content={
+            "message": "AI Trading System API - Development Mode",
+            "status": "running",
+            "frontend": "http://localhost:3000 (development)",
+            "docs": "/docs"
+        })
 
 if __name__ == "__main__":
     import uvicorn

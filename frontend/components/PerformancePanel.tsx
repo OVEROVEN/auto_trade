@@ -1,28 +1,32 @@
 'use client';
 
+import { useLanguage } from '../contexts/LanguageContext';
+
 interface PerformancePanelProps {
   symbol: string;
   analysisData: any;
 }
 
 export function PerformancePanel({ symbol, analysisData }: PerformancePanelProps) {
+  const { t } = useLanguage();
+  
   const performanceMetrics = [
     {
-      label: 'Accuracy',
+      labelKey: 'accuracy',
       value: '85.2%',
       change: '+2.1%',
       positive: true
     },
     {
-      label: 'Win Rate', 
+      labelKey: 'winRate',
       value: '72.1%',
       change: '+0.5%',
       positive: true
     },
     {
-      label: 'Risk Score',
-      value: 'Medium',
-      change: 'Stable',
+      labelKey: 'riskScore',
+      value: t.medium,
+      change: t.stable,
       positive: true
     }
   ];
@@ -31,13 +35,13 @@ export function PerformancePanel({ symbol, analysisData }: PerformancePanelProps
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
       <div className="flex items-center space-x-3 mb-6">
         <span className="text-xl">📊</span>
-        <h3 className="text-lg font-semibold text-white">Performance</h3>
+        <h3 className="text-lg font-semibold text-white">{t.performance}</h3>
       </div>
       
       <div className="space-y-4">
         {performanceMetrics.map((metric, index) => (
           <div key={index} className="flex justify-between items-center">
-            <span className="text-slate-400 text-sm">{metric.label}</span>
+            <span className="text-slate-400 text-sm">{t[metric.labelKey as keyof typeof t]}</span>
             <div className="text-right">
               <div className="text-white font-semibold">{metric.value}</div>
               <div className={`text-xs ${metric.positive ? 'text-green-400' : 'text-red-400'}`}>

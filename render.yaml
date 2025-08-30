@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: ai-trading-system
+    runtime: docker
+    plan: free
+    region: oregon  # or singapore for better latency
+    branch: main
+    buildCommand: |
+      echo "Building AI Trading System..."
+      # Frontend build is handled in Dockerfile multi-stage build
+    startCommand: ./render-start.sh
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: PORT
+        fromService:
+          type: web
+          name: ai-trading-system
+          property: port
+      - key: OPENAI_API_KEY
+        sync: false  # Set this manually in Render dashboard for security
+      - key: DATABASE_URL
+        value: sqlite:///./trading.db
+      - key: DATABASE_PASSWORD
+        generateValue: true
+      - key: API_HOST
+        value: 0.0.0.0
+    # Disk for SQLite database and logs
+    disk:
+      name: ai-trading-data
+      mountPath: /app/data
+      sizeGB: 1

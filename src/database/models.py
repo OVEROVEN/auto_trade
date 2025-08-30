@@ -5,7 +5,8 @@ Database models for the AI Trading System
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import JSON
 from datetime import datetime
 
 Base = declarative_base()
@@ -82,7 +83,7 @@ class TechnicalPattern(Base):
     description = Column(Text)
     
     # Pattern-specific data
-    key_points = Column(JSONB)  # Store coordinates as JSON
+    key_points = Column(JSON)  # Store coordinates as JSON
     target_price = Column(Float)
     stop_loss = Column(Float)
     
@@ -133,7 +134,7 @@ class AIAnalysis(Base):
     recommendation = Column(String(10), nullable=False)  # BUY, SELL, HOLD
     confidence = Column(Float, nullable=False)
     reasoning = Column(Text, nullable=False)
-    key_factors = Column(JSONB)  # Store as JSON array
+    key_factors = Column(JSON)  # Store as JSON array
     
     # Targets and risk
     price_target = Column(Float)
@@ -160,7 +161,7 @@ class BacktestResult(Base):
     end_date = Column(DateTime, nullable=False)
     
     # Strategy configuration
-    strategy_config = Column(JSONB, nullable=False)
+    strategy_config = Column(JSON, nullable=False)
     initial_capital = Column(Float, nullable=False)
     
     # Performance metrics
@@ -249,7 +250,7 @@ class SupportResistanceLevel(Base):
     last_touch = Column(DateTime, nullable=False)
     
     # Touch points
-    touch_points = Column(JSONB)  # Store touch coordinates
+    touch_points = Column(JSON)  # Store touch coordinates
     
     # Status
     is_active = Column(Boolean, default=True)
@@ -285,8 +286,141 @@ class MarketData(Base):
     last_update = Column(DateTime, default=datetime.utcnow)
     
     # Additional metadata
-    metadata = Column(JSONB)
+    extra_info = Column(JSON)
     
     __table_args__ = (
         Index('ix_market_data_symbol_market', 'symbol', 'market'),
     )
+
+
+# ============================================================================
+# USER AUTHENTICATION AND SUBSCRIPTION MODELS
+# ============================================================================
+
+class User(Base):
+    """用戶表 - 存儲用戶基本信息和認證資料"""
+    __tablename__ = "users"
+    
+    id = Column(String(36), primary_key=True, index=True)  # UUID as string
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=True)  # OAuth用戶可為空
+    google_id = Column(String(255), nullable=True, unique=True)  # Google OAuth ID
+    full_name = Column(String(255), nullable=False)
+    avatar_url = Column(String(512), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    verification_token = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    last_login = Column(DateTime, nullable=True)
+    
+    # Relationships
+    usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
+    subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
+    free_quota = relationship("FreeQuota", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<User(id={self.id}, email='{self.email}', name='{self.full_name}')>"
+
+class UsageRecord(Base):
+    """使用記錄表 - 追踪用戶AI分析等功能使用情況"""
+    __tablename__ = "usage_records"
+    
+    id = Column(String(36), primary_key=True, index=True)  # UUID as string
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    action_type = Column(String(50), nullable=False, index=True)  # ai_analysis, chart_view, etc.
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    extra_data = Column(JSON, nullable=True)  # 額外信息：股票代碼、分析類型等
+    
+    # Relationships
+    user = relationship("User", back_populates="usage_records")
+    
+    __table_args__ = (
+        Index('ix_usage_records_user_action', 'user_id', 'action_type'),
+        Index('ix_usage_records_created_user', 'created_at', 'user_id'),
+    )
+    
+    def __repr__(self):
+        return f"<UsageRecord(id={self.id}, user_id={self.user_id}, action='{self.action_type}')>"
+
+class Subscription(Base):
+    """訂閱表 - 管理用戶訂閱狀態和計費"""
+    __tablename__ = "subscriptions"
+    
+    id = Column(String(36), primary_key=True, index=True)  # UUID as string
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    plan_type = Column(String(20), nullable=False, default="free")  # free, premium
+    status = Column(String(20), nullable=False, default="active")  # active, cancelled, expired, pending
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=True)  # 可為空表示終身或免費用戶
+    payment_method = Column(String(50), nullable=True)  # credit_card, ecpay, newebpay
+    external_subscription_id = Column(String(255), nullable=True)  # Stripe/第三方訂閱ID
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="subscriptions")
+    payments = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index('ix_subscriptions_user_status', 'user_id', 'status'),
+        Index('ix_subscriptions_expires_status', 'expires_at', 'status'),
+    )
+    
+    def __repr__(self):
+        return f"<Subscription(id={self.id}, user_id={self.user_id}, plan='{self.plan_type}', status='{self.status}')>"
+
+class Payment(Base):
+    """支付記錄表 - 記錄所有支付交易"""
+    __tablename__ = "payments"
+    
+    id = Column(String(36), primary_key=True, index=True)  # UUID as string
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    subscription_id = Column(String(36), ForeignKey("subscriptions.id"), nullable=True, index=True)
+    amount = Column(Float, nullable=False)  # 支付金額
+    currency = Column(String(3), nullable=False, default="USD")  # USD, TWD
+    payment_method = Column(String(50), nullable=False)  # credit_card, ecpay_atm, newebpay_card, etc.
+    payment_provider = Column(String(30), nullable=False)  # stripe, ecpay, newebpay
+    external_transaction_id = Column(String(255), nullable=True)  # 第三方交易ID
+    status = Column(String(20), nullable=False, default="pending")  # pending, completed, failed, refunded
+    failure_reason = Column(Text, nullable=True)  # 失敗原因
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    completed_at = Column(DateTime, nullable=True)  # 完成時間
+    extra_data = Column(JSON, nullable=True)  # 額外支付信息
+    
+    # Relationships
+    user = relationship("User", back_populates="payments")
+    subscription = relationship("Subscription", back_populates="payments")
+    
+    __table_args__ = (
+        Index('ix_payments_user_status', 'user_id', 'status'),
+        Index('ix_payments_created_status', 'created_at', 'status'),
+        Index('ix_payments_external_id', 'external_transaction_id'),
+    )
+    
+    def __repr__(self):
+        return f"<Payment(id={self.id}, amount={self.amount} {self.currency}, status='{self.status}')>"
+
+class FreeQuota(Base):
+    """免費配額表 - 管理用戶免費使用次數"""
+    __tablename__ = "free_quotas"
+    
+    id = Column(String(36), primary_key=True, index=True)  # UUID as string
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    total_free_uses = Column(Integer, nullable=False, default=3)  # 新用戶總免費次數
+    used_free_uses = Column(Integer, nullable=False, default=0)  # 已使用的免費次數
+    daily_reset_date = Column(DateTime, nullable=False, default=datetime.utcnow)  # 每日重置日期
+    daily_used_count = Column(Integer, nullable=False, default=0)  # 今日已使用次數
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="free_quota")
+    
+    __table_args__ = (
+        Index('ix_free_quotas_user_reset', 'user_id', 'daily_reset_date'),
+    )
+    
+    def __repr__(self):
+        return f"<FreeQuota(user_id={self.user_id}, used={self.used_free_uses}/{self.total_free_uses}, daily={self.daily_used_count}/1)>"

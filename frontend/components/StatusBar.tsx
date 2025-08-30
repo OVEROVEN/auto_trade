@@ -1,17 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function StatusBar() {
+  const { t } = useLanguage();
   const [status, setStatus] = useState({
     apiConnected: true,
     realTimeData: true,
     aiAnalysisReady: true
   });
 
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    // 初始化時間
+    setCurrentTime(new Date());
+    
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -21,17 +26,17 @@ export function StatusBar() {
 
   const statusItems = [
     {
-      label: 'API Connected',
+      label: t.apiConnected,
       status: status.apiConnected,
       icon: '🔌'
     },
     {
-      label: 'Real-time Data',
+      label: t.realTimeData,
       status: status.realTimeData,
       icon: '📡'
     },
     {
-      label: 'AI Analysis Ready',
+      label: t.aiAnalysisReady,
       status: status.aiAnalysisReady,
       icon: '🤖'
     }
@@ -55,9 +60,9 @@ export function StatusBar() {
         </div>
         
         <div className="flex items-center space-x-4 text-sm text-slate-400">
-          <span>System Time: {currentTime.toLocaleTimeString()}</span>
+          <span>{t.systemTime}: {currentTime ? currentTime.toLocaleTimeString('en-US', { hour12: false }) : '--:--:--'}</span>
           <span>|</span>
-          <span>Market: {currentTime.getHours() >= 9 && currentTime.getHours() < 16 ? 'Open' : 'Closed'}</span>
+          <span>{t.market}: {currentTime && (currentTime.getHours() >= 9 && currentTime.getHours() < 16) ? t.marketOpen : t.marketClosed}</span>
         </div>
       </div>
     </div>

@@ -8,8 +8,14 @@ import { AIAnalysis } from '../components/AIAnalysis';
 import { PerformancePanel } from '../components/PerformancePanel';
 import { FeatureCards } from '../components/FeatureCards';
 import { StatusBar } from '../components/StatusBar';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { AuthButton } from '../components/AuthButton';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useModal } from '../contexts/ModalContext';
 
 export default function TradingDashboard() {
+  const { t, language } = useLanguage();
+  const { isAuthModalOpen } = useModal();
   const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -22,15 +28,25 @@ export default function TradingDashboard() {
   const analyzeStock = async (symbol: string) => {
     setLoading(true);
     try {
+      // 獲取認證 token
+      const token = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // 如果有 token，添加 Authorization header
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`http://localhost:8000/analyze/${symbol}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           symbol,
           period: '3mo',
-          include_ai: true
+          include_ai: true,
+          language: language // 傳送當前語言設定給 AI 分析
         })
       });
       const data = await response.json();
@@ -47,36 +63,27 @@ export default function TradingDashboard() {
       {/* Header */}
       <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between min-h-16 py-2">
             <div className="flex items-center space-x-3">
               <div className="text-2xl">🚀</div>
               <div>
-                <h1 className="text-xl font-bold text-white">AI Trading Dashboard</h1>
-                <p className="text-sm text-slate-300">Advanced Stock Analysis & AI-Powered Trading Insights</p>
+                <h1 className="text-xl font-bold text-white">{t.appTitle}</h1>
+                <p className="text-sm text-slate-300">{t.subtitle}</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 px-3 py-1 bg-blue-600/20 rounded-lg border border-blue-500/30">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                <span className="text-sm text-blue-200">Real-time Analysis</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-600/20 rounded-lg border border-green-500/30">
-                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                <span className="text-sm text-green-200">AI Recommendations</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 px-3 py-1 bg-purple-600/20 rounded-lg border border-purple-500/30">
-                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                <span className="text-sm text-purple-200">TradingView Charts</span>
-              </div>
+              <LanguageSwitcher />
+              <AuthButton />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+        style={{ pointerEvents: isAuthModalOpen ? 'none' : 'auto' }}
+      >
         {/* Stock Search Section */}
         <div className="mb-6">
           <StockSearch 

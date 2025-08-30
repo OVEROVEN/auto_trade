@@ -1,6 +1,8 @@
 from typing import Optional
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings
+from pydantic import Field
 import os
+import secrets
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -8,6 +10,40 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
     alpha_vantage_api_key: Optional[str] = Field(None, env="ALPHA_VANTAGE_API_KEY")
     anthropic_api_key: Optional[str] = Field(None, env="ANTHROPIC_API_KEY")
+    
+    # JWT Configuration
+    jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32), env="JWT_SECRET_KEY")
+    jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
+    jwt_expire_hours: int = Field(24, env="JWT_EXPIRE_HOURS")
+    
+    # OAuth Configuration
+    google_client_id: Optional[str] = Field(None, env="GOOGLE_CLIENT_ID")
+    google_client_secret: Optional[str] = Field(None, env="GOOGLE_CLIENT_SECRET")
+    
+    # Payment Configuration
+    stripe_public_key: Optional[str] = Field(None, env="STRIPE_PUBLIC_KEY")
+    stripe_secret_key: Optional[str] = Field(None, env="STRIPE_SECRET_KEY")
+    stripe_webhook_secret: Optional[str] = Field(None, env="STRIPE_WEBHOOK_SECRET")
+    
+    # ECPay (綠界科技)
+    ecpay_merchant_id: Optional[str] = Field(None, env="ECPAY_MERCHANT_ID")
+    ecpay_hash_key: Optional[str] = Field(None, env="ECPAY_HASH_KEY")
+    ecpay_hash_iv: Optional[str] = Field(None, env="ECPAY_HASH_IV")
+    ecpay_test_mode: bool = Field(True, env="ECPAY_TEST_MODE")
+    
+    # NewebPay (藍新金流)
+    newebpay_merchant_id: Optional[str] = Field(None, env="NEWEBPAY_MERCHANT_ID")
+    newebpay_hash_key: Optional[str] = Field(None, env="NEWEBPAY_HASH_KEY")
+    newebpay_hash_iv: Optional[str] = Field(None, env="NEWEBPAY_HASH_IV")
+    newebpay_test_mode: bool = Field(True, env="NEWEBPAY_TEST_MODE")
+    
+    # Email Configuration
+    smtp_server: str = Field("smtp.gmail.com", env="SMTP_SERVER")
+    smtp_port: int = Field(587, env="SMTP_PORT")
+    smtp_username: Optional[str] = Field(None, env="SMTP_USERNAME")
+    smtp_password: Optional[str] = Field(None, env="SMTP_PASSWORD")
+    email_from: Optional[str] = Field(None, env="EMAIL_FROM")
+    email_from_name: str = Field("AI Trading Dashboard", env="EMAIL_FROM_NAME")
     
     # AI Model Configuration
     # 基礎分析模型 - 速度快，成本低，適合一般聊天和簡單分析
@@ -74,7 +110,7 @@ class Settings(BaseSettings):
     
     # Development/Production
     environment: str = Field("development", env="ENVIRONMENT")
-    debug: bool = Field(True, env="DEBUG")
+    debug: bool = Field(default_factory=lambda: os.getenv("ENVIRONMENT", "development") == "development", env="DEBUG")
     
     class Config:
         env_file = ".env"

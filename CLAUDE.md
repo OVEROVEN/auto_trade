@@ -179,6 +179,16 @@ REDIS_URL=redis://localhost:6379/0
 REDIS_PASSWORD=redis_password
 ```
 
+### 🌐 Render Cloud Deployment
+
+#### Render API Configuration
+```env
+# Render API Key (for automated deployments)
+RENDER_API_KEY=rnd_5xenFgugKDUpkPUHExSwyIYnYYZY
+```
+
+**Important**: This API key provides access to Render cloud services for automated deployment and management of the AI trading system.
+
 ## 🎯 Supported Stock Symbols
 
 ### US Market

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface TradingChartProps {
   symbol: string;
@@ -8,6 +9,7 @@ interface TradingChartProps {
 }
 
 export function TradingChart({ symbol, className = '' }: TradingChartProps) {
+  const { language, t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function TradingChart({ symbol, className = '' }: TradingChartProps) {
       timezone: 'Asia/Taipei',
       theme: 'dark',
       style: '1',
-      locale: 'en',
+      locale: language === 'zh-TW' ? 'zh_TW' : language === 'zh-CN' ? 'zh_CN' : 'en',
       toolbar_bg: '#f1f3f6',
       enable_publishing: false,
       hide_top_toolbar: false,
@@ -62,7 +64,7 @@ export function TradingChart({ symbol, className = '' }: TradingChartProps) {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [symbol]);
+  }, [symbol, language]);
 
   return (
     <div className={`relative ${className}`}>
@@ -71,17 +73,17 @@ export function TradingChart({ symbol, className = '' }: TradingChartProps) {
         <div className="flex items-center space-x-3">
           <span className="text-lg">📊</span>
           <div>
-            <h2 className="text-lg font-semibold text-white">Chart Analysis - {symbol}</h2>
-            <p className="text-sm text-slate-400">Real-time price data with technical indicators</p>
+            <h2 className="text-lg font-semibold text-white">{t.chartAnalysis} - {symbol}</h2>
+            <p className="text-sm text-slate-400">{t.chartDescription}</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
           <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-            Save
+            {t.saveButton}
           </button>
           <button className="px-3 py-1 bg-slate-600 text-white text-sm rounded hover:bg-slate-700 transition-colors">
-            Fullscreen
+            {t.fullscreenButton}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface StockSearchProps {
   selectedSymbol: string;
@@ -10,6 +11,7 @@ interface StockSearchProps {
 }
 
 export function StockSearch({ selectedSymbol, onSymbolChange, onAnalyze, loading }: StockSearchProps) {
+  const { t } = useLanguage();
   const [inputSymbol, setInputSymbol] = useState(selectedSymbol);
 
   const popularSymbols = [
@@ -46,7 +48,7 @@ export function StockSearch({ selectedSymbol, onSymbolChange, onAnalyze, loading
               type="text"
               value={inputSymbol}
               onChange={(e) => setInputSymbol(e.target.value)}
-              placeholder="Enter stock symbol (e.g., AAPL, 2330.TW)"
+              placeholder={t.searchPlaceholder}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
             />
@@ -58,10 +60,10 @@ export function StockSearch({ selectedSymbol, onSymbolChange, onAnalyze, loading
               {loading ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Analyzing</span>
+                  <span>{t.analyzing}</span>
                 </div>
               ) : (
-                'Analyze'
+                t.analyzeButton
               )}
             </button>
           </div>
@@ -70,7 +72,7 @@ export function StockSearch({ selectedSymbol, onSymbolChange, onAnalyze, loading
         {/* Popular Stocks */}
         <div className="flex-1 lg:max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-slate-400 mr-2">Popular:</span>
+            <span className="text-sm text-slate-400 mr-2">{t.popular}</span>
             {popularSymbols.map((stock) => (
               <button
                 key={stock.symbol}

@@ -1,30 +1,34 @@
 'use client';
 
+import { useLanguage } from '../contexts/LanguageContext';
+
 export function FeatureCards() {
+  const { t } = useLanguage();
+  
   const features = [
     {
       icon: '📈',
-      title: 'Technical Analysis',
-      description: '15+ indicators including RSI, MACD, Bollinger Bands',
-      status: 'Active'
+      titleKey: 'technicalAnalysis',
+      descriptionKey: 'technicalAnalysisDesc',
+      statusKey: 'active'
     },
     {
       icon: '🔍',
-      title: 'Pattern Recognition',
-      description: 'Advanced chart patterns and trend analysis',
-      status: 'Active'
+      titleKey: 'patternRecognition',
+      descriptionKey: 'patternRecognitionDesc',
+      statusKey: 'active'
     },
     {
       icon: '🤖',
-      title: 'AI Insights',
-      description: 'OpenAI powered trading recommendations',
-      status: 'Active'
+      titleKey: 'aiInsights',
+      descriptionKey: 'aiInsightsDesc',
+      statusKey: 'active'
     },
     {
       icon: '🌍',
-      title: 'Multi-Market',
-      description: 'US stocks and Taiwan market support',
-      status: 'Active'
+      titleKey: 'multiMarket',
+      descriptionKey: 'multiMarketDesc',
+      statusKey: 'active'
     }
   ];
 
@@ -40,14 +44,14 @@ export function FeatureCards() {
               {feature.icon}
             </div>
             <h3 className="font-semibold text-white mb-2 group-hover:text-blue-300 transition-colors">
-              {feature.title}
+              {t[feature.titleKey as keyof typeof t]}
             </h3>
             <p className="text-sm text-slate-400 mb-3 leading-relaxed">
-              {feature.description}
+              {t[feature.descriptionKey as keyof typeof t]}
             </p>
             <div className="inline-flex items-center space-x-2 px-3 py-1 bg-green-600/20 rounded-full border border-green-500/30">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-xs text-green-200">{feature.status}</span>
+              <span className="text-xs text-green-200">{t[feature.statusKey as keyof typeof t]}</span>
             </div>
           </div>
         </div>

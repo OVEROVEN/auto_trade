@@ -1,4 +1,22 @@
 # Multi-stage Docker build for AI Trading System
+# Stage 1: Build the frontend
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install frontend dependencies
+RUN npm ci --only=production
+
+# Copy frontend source code
+COPY frontend/ ./
+
+# Build the frontend
+RUN npm run build
+
+# Stage 2: Python backend base
 FROM python:3.11-slim as base
 
 # Set environment variables
@@ -40,6 +58,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY . .
+
+# Copy built frontend from frontend-builder stage
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+# Note: No public folder exists in this project structure
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser && \
