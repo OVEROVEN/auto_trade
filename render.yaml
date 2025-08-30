@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     region: oregon  # or singapore for better latency
-    branch: main
+    branch: master
     buildCommand: |
       echo "Building AI Trading System..."
       # Frontend build is handled in Dockerfile multi-stage build
