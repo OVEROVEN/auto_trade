@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     branch: master
-    dockerfilePath: ./Dockerfile.test
+    dockerfilePath: ./Dockerfile.backend
     buildCommand: |
       echo "Building AI Trading System with minimal dependencies..."
     startCommand: python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
