@@ -1,66 +1,82 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshUserInfo } = useAuth();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState<string>('');
+  const [hasProcessed, setHasProcessed] = useState(false);
+
+  // 穩定 URL 參數以避免重複觸發
+  const urlParams = useMemo(() => ({
+    code: searchParams.get('code'),
+    state: searchParams.get('state')
+  }), [searchParams]);
+
+  const handleCallback = useCallback(async () => {
+    // 防止重複處理
+    if (hasProcessed) return;
+    
+    // 標記為已處理，防止重複執行
+    setHasProcessed(true);
+      
+    const { code, state } = urlParams;
+    
+    if (!code || !state) {
+      setStatus('error');
+      setError('缺少必要的授權參數');
+      return;
+    }
+
+    try {
+      // 發送授權碼到後端
+      const response = await fetch('http://localhost:8000/api/auth/google/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          state,
+          redirect_uri: window.location.origin + '/auth/google/callback'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 保存token到localStorage
+        localStorage.setItem('auth_token', data.access_token);
+        
+        // 刷新用戶信息，refreshUserInfo現在會強制讀取localStorage
+        await refreshUserInfo();
+        
+        setStatus('success');
+        
+        // 2秒後跳轉到主頁
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+      } else {
+        const errorData = await response.json();
+        setStatus('error');
+        setError(errorData.detail || 'Google登入失敗');
+      }
+    } catch (error) {
+      console.error('Google callback error:', error);
+      setStatus('error');
+      setError('處理Google登入回調時發生錯誤');
+    }
+  }, [hasProcessed, urlParams, refreshUserInfo, router]);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
-      
-      if (!code || !state) {
-        setStatus('error');
-        setError('缺少必要的授權參數');
-        return;
-      }
-
-      try {
-        // 發送授權碼到後端
-        const response = await fetch('http://localhost:8000/api/auth/google/callback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-            state,
-            redirect_uri: window.location.origin + '/auth/google/callback'
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          // 保存token和用戶信息
-          localStorage.setItem('auth_token', data.access_token);
-          
-          setStatus('success');
-          
-          // 2秒後跳轉到主頁
-          setTimeout(() => {
-            router.push('/');
-          }, 2000);
-        } else {
-          const errorData = await response.json();
-          setStatus('error');
-          setError(errorData.detail || 'Google登入失敗');
-        }
-      } catch (error) {
-        console.error('Google callback error:', error);
-        setStatus('error');
-        setError('處理Google登入回調時發生錯誤');
-      }
-    };
-
     handleCallback();
-  }, [searchParams, router]);
+  }, [handleCallback]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">

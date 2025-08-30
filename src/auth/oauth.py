@@ -187,37 +187,103 @@ class OAuthStateManager:
     
     def __init__(self):
         self._states = {}  # 生產環境應使用 Redis 或其他持久化存儲
+        self._used_states = set()  # 追蹤已使用的狀態，避免重複使用
+        self._used_codes = set()  # 追蹤已使用的authorization codes
     
     def create_state(self, redirect_uri: str, extra_data: Dict[str, Any] = None) -> str:
         """創建並存儲 OAuth 狀態"""
+        import time
         state = secrets.token_urlsafe(32)
         
         self._states[state] = {
             "redirect_uri": redirect_uri,
-            "created_at": secrets.token_urlsafe(16),  # 簡單時間戳
-            "extra_data": extra_data or {}
+            "created_at": time.time(),  # 使用真實時間戳
+            "extra_data": extra_data or {},
+            "used": False  # 標記是否已使用
         }
         
         return state
     
     def verify_state(self, state: str) -> Optional[Dict[str, Any]]:
         """驗證並獲取 OAuth 狀態數據"""
-        state_data = self._states.pop(state, None)
+        import time
+        
+        state_data = self._states.get(state, None)
         
         if not state_data:
+            logger.warning(f"OAuth state not found: {state}")
             return None
         
-        # 這裡可以添加過期檢查
+        # 檢查是否已經使用過
+        if state_data.get("used", False):
+            logger.warning(f"OAuth state already used: {state}")
+            # 允許短時間內的重複使用（處理瀏覽器重複請求）
+            if time.time() - state_data["created_at"] < 30:  # 30秒內允許重用
+                logger.info(f"Allowing state reuse within 30 seconds: {state}")
+                return state_data
+            return None
+        
+        # 檢查過期（10分鐘）
+        if time.time() - state_data["created_at"] > 600:  # 10分鐘過期
+            logger.warning(f"OAuth state expired: {state}")
+            self._states.pop(state, None)
+            return None
+        
+        # 標記為已使用，但不立即刪除
+        state_data["used"] = True
+        state_data["used_at"] = time.time()
+        
+        logger.info(f"OAuth state verified successfully: {state}")
         return state_data
     
     def cleanup_expired_states(self):
         """清理過期狀態（在生產環境中應定期調用）"""
-        # 簡單實現，實際應基於時間戳清理
-        if len(self._states) > 1000:  # 防止內存洩漏
-            # 清理一半舊狀態
-            keys_to_remove = list(self._states.keys())[:len(self._states)//2]
+        import time
+        current_time = time.time()
+        expired_keys = []
+        
+        # 清理過期的狀態（超過10分鐘）
+        for key, state_data in self._states.items():
+            if current_time - state_data["created_at"] > 600:  # 10分鐘過期
+                expired_keys.append(key)
+        
+        # 清理已使用且超過1小時的狀態
+        for key, state_data in list(self._states.items()):
+            if (state_data.get("used", False) and 
+                "used_at" in state_data and 
+                current_time - state_data["used_at"] > 3600):  # 1小時後清理已使用的狀態
+                expired_keys.append(key)
+        
+        # 移除過期狀態
+        for key in set(expired_keys):
+            self._states.pop(key, None)
+            
+        # 防止內存洩漏的緊急清理
+        if len(self._states) > 1000:
+            logger.warning("OAuth state manager has too many states, performing emergency cleanup")
+            # 清理最舊的狀態
+            sorted_states = sorted(
+                self._states.items(), 
+                key=lambda x: x[1]["created_at"]
+            )
+            keys_to_remove = [k for k, v in sorted_states[:len(sorted_states)//2]]
             for key in keys_to_remove:
                 self._states.pop(key, None)
+                
+        logger.info(f"OAuth state cleanup completed. Removed {len(set(expired_keys))} expired states. Current state count: {len(self._states)}")
+    
+    def is_code_used(self, code: str) -> bool:
+        """檢查authorization code是否已經被使用"""
+        return code in self._used_codes
+    
+    def mark_code_used(self, code: str) -> None:
+        """標記authorization code為已使用"""
+        self._used_codes.add(code)
+        # 防止內存洩漏，保持最多1000個已使用的codes
+        if len(self._used_codes) > 1000:
+            # 移除一半舊的codes（簡單實現，生產環境應使用時間戳）
+            codes_list = list(self._used_codes)
+            self._used_codes = set(codes_list[500:])  # 保留後500個
 
 # OAuth 輔助函數
 def validate_google_email(email: str) -> bool:

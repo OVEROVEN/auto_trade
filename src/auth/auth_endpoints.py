@@ -464,6 +464,17 @@ async def google_oauth_callback(
                 detail="回調 URI 不匹配"
             )
         
+        # 檢查authorization code是否已經被使用
+        if oauth_state_manager.is_code_used(request.code):
+            logger.warning(f"Authorization code already used: {request.code[:10]}...")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="授權碼已被使用，請重新登入"
+            )
+        
+        # 標記authorization code為已使用
+        oauth_state_manager.mark_code_used(request.code)
+        
         # 使用授權碼交換訪問令牌
         token_data = await google_oauth.exchange_code_for_token(request.code, request.redirect_uri)
         

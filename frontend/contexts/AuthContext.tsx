@@ -169,7 +169,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshUserInfo = async () => {
-    if (token) {
+    // 強制重新讀取localStorage中的token
+    const savedToken = localStorage.getItem('auth_token');
+    if (savedToken) {
+      setToken(savedToken);
+      await fetchUserInfo(savedToken);
+    } else if (token) {
       await fetchUserInfo(token);
     }
   };

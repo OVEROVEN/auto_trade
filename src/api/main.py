@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -119,12 +119,20 @@ app.add_middleware(
 # Import and include authentication routes
 try:
     from src.auth.auth_endpoints import auth_router
+    from src.auth.auth import get_current_user, get_optional_user, check_ai_usage, AIUsageChecker
     app.include_router(auth_router)
     logger.info("✅ 認證模塊載入成功")
+    
+    # Set authentication available flag
+    auth_available = True
 except ImportError as e:
     logger.warning(f"⚠️ 認證模塊載入失敗: {e}")
+    auth_available = False
+    get_optional_user = lambda: None  # Fallback function
 except Exception as e:
     logger.error(f"❌ 認證模塊初始化錯誤: {e}")
+    auth_available = False
+    get_optional_user = lambda: None  # Fallback function
 
 # Mount frontend static files (for production deployment)
 import os
@@ -380,8 +388,20 @@ async def health_check():
         }
     }
 
+# Create dependency function for optional user
+if auth_available:
+    get_user_dependency = Depends(get_optional_user)
+else:
+    async def no_auth_user():
+        return None
+    get_user_dependency = Depends(no_auth_user)
+
 @app.post("/analyze/{symbol}", response_model=AnalysisResponse)
-async def analyze_stock(symbol: str, request: StockAnalysisRequest):
+async def analyze_stock(
+    symbol: str, 
+    request: StockAnalysisRequest,
+    current_user = get_user_dependency
+):
     """
     Comprehensive stock analysis including technical indicators, patterns, and AI insights.
     """
@@ -461,27 +481,52 @@ async def analyze_stock(symbol: str, request: StockAnalysisRequest):
                         } for p in pattern_list[:3]  # Limit to top 3
                     ]
         
-        # AI Analysis
+        # AI Analysis - 需要登入驗證
         ai_analysis = None
         if request.include_ai and ai_analyzer:
-            try:
-                ai_result = await ai_analyzer.analyze_technical_data(
-                    symbol, data_with_indicators, technical_indicators, patterns, 
-                    context=None, language=request.language
-                )
+            if not auth_available or current_user is None:
+                # 未登入用戶無法使用AI分析
                 ai_analysis = {
-                    "recommendation": ai_result.recommendation,
-                    "confidence": ai_result.confidence,
-                    "reasoning": ai_result.reasoning,
-                    "key_factors": ai_result.key_factors,
-                    "price_target": ai_result.price_target,
-                    "stop_loss": ai_result.stop_loss,
-                    "risk_score": ai_result.risk_score,
-                    "entry_price": ai_result.entry_price
+                    "error": "請登入帳號以使用AI分析功能",
+                    "login_required": True
                 }
-            except Exception as e:
-                logger.error(f"AI analysis failed: {str(e)}")
-                ai_analysis = {"error": "AI analysis unavailable"}
+            else:
+                try:
+                    # 檢查AI使用配額
+                    from src.database.connection import get_db_session
+                    from src.auth import crud
+                    
+                    db = next(get_db_session())
+                    if not crud.check_user_can_use_ai(db, current_user.id):
+                        quota = crud.get_user_quota(db, current_user.id)
+                        ai_analysis = {
+                            "error": "AI分析配額已用完",
+                            "quota_exceeded": True,
+                            "remaining_quota": quota.remaining_daily_quota if quota else 0
+                        }
+                    else:
+                        # 進行AI分析
+                        ai_result = await ai_analyzer.analyze_technical_data(
+                            symbol, data_with_indicators, technical_indicators, patterns, 
+                            context=None, language=request.language
+                        )
+                        
+                        # 記錄AI使用次數
+                        crud.record_ai_usage(db, current_user.id, "stock_analysis")
+                        
+                        ai_analysis = {
+                            "recommendation": ai_result.recommendation,
+                            "confidence": ai_result.confidence,
+                            "reasoning": ai_result.reasoning,
+                            "key_factors": ai_result.key_factors,
+                            "price_target": ai_result.price_target,
+                            "stop_loss": ai_result.stop_loss,
+                            "risk_score": ai_result.risk_score,
+                            "entry_price": ai_result.entry_price
+                        }
+                except Exception as e:
+                    logger.error(f"AI analysis failed: {str(e)}")
+                    ai_analysis = {"error": "AI analysis unavailable"}
         
         # Generate signals
         signals = []

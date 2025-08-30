@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AIAnalysisProps {
   symbol: string;
@@ -11,6 +12,7 @@ interface AIAnalysisProps {
 
 export function AIAnalysis({ symbol, analysisData, loading }: AIAnalysisProps) {
   const { t } = useLanguage();
+  const { user, isAuthenticated, token } = useAuth();
   const [aiInsights, setAiInsights] = useState<string[]>([]);
 
   useEffect(() => {
@@ -87,6 +89,41 @@ export function AIAnalysis({ symbol, analysisData, loading }: AIAnalysisProps) {
         <div className="text-center py-8">
           <div className="text-4xl mb-4">🎯</div>
           <p className="text-slate-400">{t.generatingAnalysis}</p>
+        </div>
+      ) : analysisData.ai_analysis?.login_required ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">🔐</div>
+          <h4 className="text-lg font-semibold text-white mb-2">需要登入才能使用AI分析</h4>
+          <p className="text-slate-400 mb-4">請登入您的帳號以獲得完整的AI交易建議</p>
+          <div className="flex flex-col gap-2 max-w-sm mx-auto">
+            <div className="bg-slate-700/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <span>🤖</span>
+                <span>GPT-4 驅動的智能分析</span>
+              </div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <span>📊</span>
+                <span>精準進場點與目標價</span>
+              </div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <span>⚡</span>
+                <span>即時策略建議</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : analysisData.ai_analysis?.quota_exceeded ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">⏰</div>
+          <h4 className="text-lg font-semibold text-white mb-2">AI分析配額已用完</h4>
+          <p className="text-slate-400 mb-2">
+            剩餘配額: {analysisData.ai_analysis.remaining_quota || 0} 次
+          </p>
+          <p className="text-slate-400">請明天再試或考慮升級為付費用戶</p>
         </div>
       ) : (
         <div className="space-y-4">

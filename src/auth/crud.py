@@ -354,6 +354,26 @@ def get_user_usage_stats(db: Session, user_id: uuid.UUID) -> Dict[str, int]:
         "this_month_chart_views": month_chart or 0
     }
 
+def record_ai_usage(db: Session, user_id: uuid.UUID, action_type: str) -> UsageRecord:
+    """記錄用戶AI使用"""
+    # 創建使用記錄
+    usage_record = UsageRecord(
+        user_id=user_id,
+        action_type=action_type,
+        extra_data={"resource_type": "ai_analysis", "timestamp": datetime.utcnow().isoformat()}
+    )
+    
+    db.add(usage_record)
+    
+    # 更新配額
+    quota = get_user_quota(db, user_id)
+    if quota:
+        quota.consume_quota()
+    
+    db.commit()
+    db.refresh(usage_record)
+    return usage_record
+
 # ========== 免費配額相關 CRUD ==========
 
 def create_free_quota(db: Session, user_id: uuid.UUID) -> FreeQuota:

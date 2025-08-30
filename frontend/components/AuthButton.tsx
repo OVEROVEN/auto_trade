@@ -69,7 +69,7 @@ interface AuthModalProps {
 function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { login, register, loginWithGoogle } = useAuth();
   const { t } = useLanguage();
-  const { closeAuthModal } = useModal();
+  const { closeAuthModal, openAuthModal } = useModal();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -259,15 +259,18 @@ function AuthModal({ isOpen, onClose }: AuthModalProps) {
             try {
               setLoading(true);
               setError('');
-              await loginWithGoogle();
+              
+              // Google登入會重定向頁面，所以先關閉模態框
               onClose();
+              
+              // 開始Google OAuth流程 (這會重定向到Google)
+              await loginWithGoogle();
+              
             } catch (error) {
               console.error('Google login failed:', error);
-              if (error.message?.includes('409') || error.message?.includes('已註冊')) {
-                setError('此Google帳戶的郵箱已註冊過，系統已自動綁定您的Google帳戶，請重試登入。');
-              } else {
-                setError('Google登入失敗，請稍後重試或聯繫客服');
-              }
+              // 如果在重定向前出錯，重新打開模態框並顯示錯誤
+              openAuthModal();
+              setError('Google登入初始化失敗，請稍後重試');
             } finally {
               setLoading(false);
             }
