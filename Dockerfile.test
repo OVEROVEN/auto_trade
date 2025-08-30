@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy everything at once to avoid partial copy issues
 COPY . .
 
-# Install dependencies in one step
-RUN pip install --no-cache-dir -r requirements-minimal.txt
+# Install minimal dependencies for testing
+RUN pip install --no-cache-dir -r requirements-ultra.txt
 
 # Use environment variable for port
 CMD python -m uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
