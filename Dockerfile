@@ -16,5 +16,8 @@ COPY config/ ./config/
 # Create data directory
 RUN mkdir -p data logs
 
+# Set Python path to include app directory
+ENV PYTHONPATH=/app
+
 # Railway uses PORT environment variable
 CMD python -m uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
