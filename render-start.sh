@@ -35,4 +35,4 @@ echo "   - Debug: $DEBUG"
 
 # Start the application
 echo "🔥 Starting FastAPI server..."
-exec python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT --workers 2
+exec python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT

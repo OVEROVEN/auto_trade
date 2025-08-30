@@ -35,8 +35,8 @@ RUN apt-get update && apt-get install -y \
 # Create app directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy minimal requirements first for better caching
+COPY requirements-minimal.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
