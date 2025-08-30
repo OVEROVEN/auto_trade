@@ -1,13 +1,4 @@
-# Railway Docker Configuration for AI Trading System
-FROM node:18-alpine AS frontend-builder
-
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci --only=production
-COPY frontend/ ./
-RUN npm run build
-
-# Python backend
+# Simplified Railway Docker - Backend Only
 FROM python:3.11-slim
 
 # Set environment variables
@@ -27,20 +18,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
-
-# Copy built frontend
-COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY src/ ./src/
+COPY config/ ./config/
 
 # Create necessary directories
 RUN mkdir -p logs data
 
-# Expose port
-EXPOSE $PORT
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:$PORT/health || exit 1
-
-# Start command with Railway PORT
+# Use Railway's PORT environment variable
 CMD python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
