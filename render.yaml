@@ -1,13 +1,11 @@
 services:
   - type: web
     name: ai-trading-system
-    runtime: docker
+    runtime: python
     plan: free
-    region: singapore
+    region: oregon
     branch: master
-    dockerfilePath: ./Dockerfile.backend
-    buildCommand: |
-      echo "Building AI Trading System with minimal dependencies..."
+    buildCommand: pip install -r requirements-ultra.txt
     startCommand: python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
