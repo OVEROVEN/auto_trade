@@ -15,6 +15,19 @@ export DATABASE_URL=${DATABASE_URL:-sqlite:///./trading.db}
 export DATABASE_PASSWORD=${DATABASE_PASSWORD:-render_password}
 export API_HOST=${API_HOST:-0.0.0.0}
 
+# JWT Configuration
+export JWT_SECRET_KEY=${JWT_SECRET_KEY:-$(python -c "import secrets; print(secrets.token_urlsafe(32))")}
+export JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+export JWT_EXPIRE_HOURS=${JWT_EXPIRE_HOURS:-24}
+
+# Google OAuth (will need to be set in Render dashboard)
+export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+
+# Email settings (optional)
+export SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+export SMTP_PORT=${SMTP_PORT:-587}
+
 echo "✅ Environment configured"
 echo "   - Environment: $ENVIRONMENT"
 echo "   - Port: $PORT"

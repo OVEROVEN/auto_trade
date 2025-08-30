@@ -28,6 +28,22 @@ services:
         generateValue: true
       - key: API_HOST
         value: 0.0.0.0
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_HOURS
+        value: 24
+      # Google OAuth Configuration
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # Set this manually in Render dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  # Set this manually in Render dashboard
+      # Optional email configuration
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
     # Disk for SQLite database and logs
     disk:
       name: ai-trading-data
