@@ -3,12 +3,12 @@ services:
     name: ai-trading-system
     runtime: docker
     plan: free
-    region: oregon  # or singapore for better latency
+    region: singapore
     branch: master
+    dockerfilePath: ./Dockerfile.minimal
     buildCommand: |
-      echo "Building AI Trading System..."
-      # Frontend build is handled in Dockerfile multi-stage build
-    startCommand: ./render-start.sh
+      echo "Building AI Trading System with minimal dependencies..."
+    startCommand: python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
