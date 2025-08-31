@@ -5,10 +5,13 @@ services:
     plan: free
     buildCommand: pip install -r requirements-core.txt
     startCommand: python -m uvicorn src.api.main_core:app --host 0.0.0.0 --port $PORT
+    repo: https://github.com/OVEROVEN/auto_trade
+    branch: master
+    rootDir: ./
     envVars:
       - key: ENVIRONMENT
         value: production
-      - key: DEBUG
+      - key: DEBUG  
         value: false
       - key: SERVICE_NAME
         value: core-api
