@@ -13,6 +13,7 @@ requests==2.32.3
 
 # 技術分析 (基礎)
 scipy==1.13.1
+scikit-learn==1.5.1
 
 # 數據庫
 sqlalchemy==2.0.31

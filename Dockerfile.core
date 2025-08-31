@@ -7,11 +7,8 @@ WORKDIR /app
 COPY requirements-core.txt .
 RUN pip install --no-cache-dir -r requirements-core.txt
 
-# 複製核心應用代碼
-COPY src/api/main_core.py ./src/api/main.py
-COPY src/data_fetcher/ ./src/data_fetcher/
-COPY src/analysis/ ./src/analysis/
-COPY src/auth/ ./src/auth/
+# 複製所有源代碼 (排除不必要的文件由.dockerignore處理)
+COPY src/ ./src/
 COPY config/ ./config/
 
 # 創建必要目錄
@@ -24,4 +21,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # 啟動核心服務
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "src.api.main_core:app", "--host", "0.0.0.0", "--port", "8000"]
