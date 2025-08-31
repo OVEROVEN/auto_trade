@@ -195,20 +195,58 @@ except Exception as e:
 # Initialize advanced pattern recognizer
 advanced_pattern_recognizer = AdvancedPatternRecognizer()
 
-# Initialize chart generators
-chart_generator = ChartGenerator()
-from src.visualization.professional_charts import ProfessionalChartGenerator
-from src.visualization.tradingview_charts import TradingViewStyleChart
-from src.visualization.tradingview_widget import TradingViewWidget
-from src.visualization.enhanced_tradingview import EnhancedTradingViewChart
-from src.visualization.clean_tradingview import CleanTradingViewChart
-from src.visualization.custom_tradingview import CustomTradingViewChart
-professional_chart_generator = ProfessionalChartGenerator()
-tradingview_chart_generator = TradingViewStyleChart()
-tradingview_widget = TradingViewWidget()
-enhanced_tradingview = EnhancedTradingViewChart()
-clean_tradingview = CleanTradingViewChart()
-custom_tradingview = CustomTradingViewChart()
+# Initialize chart generators with error handling
+chart_generator = None
+professional_chart_generator = None
+tradingview_chart_generator = None
+tradingview_widget = None
+enhanced_tradingview = None
+
+try:
+    chart_generator = ChartGenerator()
+    logger.info("Basic chart generator initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize chart generator: {e}")
+
+try:
+    from src.visualization.professional_charts import ProfessionalChartGenerator
+    professional_chart_generator = ProfessionalChartGenerator()
+    logger.info("Professional chart generator initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize professional charts: {e}")
+
+try:
+    from src.visualization.tradingview_charts import TradingViewStyleChart
+    tradingview_chart_generator = TradingViewStyleChart()
+    logger.info("TradingView chart generator initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize TradingView charts: {e}")
+
+try:
+    from src.visualization.tradingview_widget import TradingViewWidget
+    tradingview_widget = TradingViewWidget()
+    logger.info("TradingView widget initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize TradingView widget: {e}")
+
+try:
+    from src.visualization.enhanced_tradingview import EnhancedTradingViewChart
+    enhanced_tradingview = EnhancedTradingViewChart()
+    logger.info("Enhanced TradingView chart initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize enhanced TradingView: {e}")
+
+clean_tradingview = None
+custom_tradingview = None
+
+try:
+    from src.visualization.clean_tradingview import CleanTradingViewChart
+    from src.visualization.custom_tradingview import CustomTradingViewChart
+    clean_tradingview = CleanTradingViewChart()
+    custom_tradingview = CustomTradingViewChart()
+    logger.info("Additional TradingView modules loaded")
+except Exception as e:
+    logger.error(f"Failed to load additional TradingView modules: {e}")
 
 # Initialize new analysis engines
 buy_signal_engine = BuySignalEngine()
@@ -1282,6 +1320,8 @@ async def get_candlestick_chart(
         
         # 生成圖表 - 使用專業圖表生成器
         if chart_type == "professional" or chart_type == "tradingview":
+            if professional_chart_generator is None:
+                raise HTTPException(status_code=503, detail="Professional chart generator not available")
             chart_html = professional_chart_generator.create_professional_chart(
                 data=data_with_indicators,
                 symbol=symbol,
@@ -1290,6 +1330,8 @@ async def get_candlestick_chart(
                 theme="dark"
             )
         else:
+            if chart_generator is None:
+                raise HTTPException(status_code=503, detail="Chart generator not available")
             chart_html = chart_generator.create_candlestick_chart(
                 data=data_with_indicators,
                 symbol=symbol,
@@ -1350,6 +1392,8 @@ async def get_performance_chart(symbol: str, strategy: str = "pattern_trading", 
         )
         
         # 生成績效比較圖表
+        if chart_generator is None:
+            raise HTTPException(status_code=503, detail="Chart generator not available")
         chart_html = chart_generator.create_performance_chart(
             equity_curve=results.equity_curve,
             benchmark=benchmark_curve
@@ -1440,6 +1484,8 @@ async def get_professional_chart(
                 logger.warning(f"形態分析失敗: {str(e)}")
         
         # 生成專業圖表 - 使用穩定版本
+        if tradingview_chart_generator is None:
+            raise HTTPException(status_code=503, detail="TradingView chart generator not available")
         chart_html = tradingview_chart_generator.create_chart(
             data=data_with_indicators,
             symbol=symbol,
