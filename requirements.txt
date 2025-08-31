@@ -77,6 +77,10 @@ opencv-python==4.10.0.84
 matplotlib==3.9.1
 seaborn==0.13.2
 
+# Interactive visualization
+plotly==5.17.0
+kaleido==0.2.1
+
 # Date handling
 python-dateutil==2.9.0.post0
 pytz==2024.1
