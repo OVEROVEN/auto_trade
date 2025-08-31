@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: auto-trade-core
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-core.txt
+    startCommand: python -m uvicorn src.api.main_core:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: SERVICE_NAME
+        value: core-api
+      - key: DATABASE_URL
+        value: sqlite:///./data/trading.db
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        value: "610357573971-t2r6c0b3i8fq8kng1j8e5s4l6jiqiggf.apps.googleusercontent.com"
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
