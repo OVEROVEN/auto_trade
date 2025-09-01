@@ -10,6 +10,7 @@ import { FeatureCards } from '../components/FeatureCards';
 import { StatusBar } from '../components/StatusBar';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { AuthButton } from '../components/AuthButton';
+import { RedemptionCode } from '../components/RedemptionCode';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
 
@@ -117,6 +118,11 @@ export default function TradingDashboard() {
             symbol={selectedSymbol}
             analysisData={analysisData}
           />
+        </div>
+
+        {/* Redemption Code Section */}
+        <div className="mb-6">
+          <RedemptionCode />
         </div>
 
         {/* Feature Cards */}

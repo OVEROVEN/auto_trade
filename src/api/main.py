@@ -127,10 +127,19 @@ try:
     auth_available = True
 except ImportError as e:
     logger.warning(f"⚠️ 認證模塊載入失敗: {e}")
-    auth_available = False
-    get_optional_user = lambda: None  # Fallback function
+
+# Import and include redemption code routes
+try:
+    from src.api.redemption_endpoints import router as redemption_router
+    app.include_router(redemption_router)
+    logger.info("✅ 兌換碼模塊載入成功")
+except ImportError as e:
+    logger.warning(f"⚠️ 兌換碼模塊載入失敗: {e}")
 except Exception as e:
-    logger.error(f"❌ 認證模塊初始化錯誤: {e}")
+    logger.error(f"❌ 兌換碼模塊初始化錯誤: {e}")
+
+# Set fallback functions if authentication not available
+if not auth_available:
     auth_available = False
     get_optional_user = lambda: None  # Fallback function
 

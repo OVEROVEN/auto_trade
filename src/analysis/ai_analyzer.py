@@ -342,7 +342,7 @@ class OpenAIAnalyzer:
         lang_instruction = language_instructions.get(language, language_instructions["en"])
         
         prompt = f"""
-        As an expert technical analyst following Analyst Wang's proven trading strategies, analyze the following stock data and provide a trading recommendation.
+        As an expert technical analyst following professional analyst strategies, analyze the following stock data and provide a trading recommendation.
         
         IMPORTANT: {lang_instruction}
 
@@ -371,9 +371,9 @@ class OpenAIAnalyzer:
         
         prompt += f"""
 
-        🎯 分析師老王完整招數 (ANALYST WANG'S COMPLETE TRADING METHODS):
+        🎯 分析師完整招數 (PROFESSIONAL ANALYST'S COMPLETE TRADING METHODS):
         
-        1. 【看均線避免被「雙巴」- 老王核心策略】:
+        1. 【看均線避免被「雙巴」- 分析師核心策略】:
         {f"   - 當前價格 ${current_price:.2f} vs 20日均線 ${indicators.get('sma_20', 0):.2f}" if 'sma_20' in indicators else ""}
         {"   - 🔍 關鍵檢查: 前高壓力是否轉為支撐？突破是否伴隨大量？"}
         {f"   - 📊 成交量判斷: 當前 {data_summary.get('volume_ratio', 1):.2f}x → {'低基期爆量=極大利多(否極泰來)' if data_summary.get('volume_ratio', 1) > 2 and current_price < indicators.get('sma_20', current_price) * 1.1 else '高基期爆量=兇多吉少' if data_summary.get('volume_ratio', 1) > 2 else '量能正常'}"}
@@ -382,25 +382,25 @@ class OpenAIAnalyzer:
         {"   - 🎯 等幅上漲: 設定停利位置可根據等幅上漲判斷"}
         {"   - 📅 月均線扣抵值: 觀察月均線變化"}
 
-        2. 【RSI進階運用 - 避免鈍化陷阱 (老王精髓)】:
+        2. 【RSI進階運用 - 避免鈍化陷阱 (分析師精髓)】:
         {f"   - 當前RSI: {indicators.get('rsi', 'N/A')}" if 'rsi' in indicators else "   - RSI數據不可用"}
         {f"   - ⚡ RSI鈍化診斷: {'RSI已過熱鈍化' if indicators.get('rsi', 50) > 80 else 'RSI已超賣鈍化' if indicators.get('rsi', 50) < 20 else 'RSI正常範圍'}" if 'rsi' in indicators else ""}
-        {f"   - 🚨 **老王關鍵**: RSI鈍化時改看KD指標 ('羅威KD是歸鎳')" if 'rsi' in indicators and (indicators['rsi'] > 80 or indicators['rsi'] < 20) else ""}
+        {f"   - 🚨 **分析師關鍵**: RSI鈍化時改看KD指標 ('羅威KD是歸鎳')" if 'rsi' in indicators and (indicators['rsi'] > 80 or indicators['rsi'] < 20) else ""}
         {f"   - 📉 高檔操作: RSI跌破80即賣出，勿等KD死叉！" if 'rsi' in indicators and indicators['rsi'] > 75 else ""}
         {f"   - 📈 低檔操作: RSI慣性跌破20表示過熱，反彈突破20應回補" if 'rsi' in indicators and indicators['rsi'] < 25 else ""}
         {"   - 🔄 RSI背離: 抓取轉折高低點，價格新高但RSI不創新高(頂背離)"}
         {"   - ⚖️ 5日均線配合: RSI鈍化時觀察5日均線，跌破即賣出"}
 
-        3. 【羅威與老王混搭策略 - 操作節奏】:
+        3. 【羅威與分析師混搭策略 - 操作節奏】:
         {"   - 🎯 **核心節奏**: 站上10日均線買進，跌破5日均線賣出"}
         {"   - 🔄 均線糾結: 等待'三陽開泰'確認突破(糾結可能持續很久)"}
         {f"   - ✅ 波段訊號: 價格{'已站上' if current_price > indicators.get('sma_20', 0) * 0.98 else '未站上'}10日均線 → {'買進訊號' if current_price > indicators.get('sma_20', 0) * 0.98 else '等待時機'}" if 'sma_20' in indicators else ""}
-        {"   - ⚡ 短線操作: 跌破5日均線立即賣出避免套牢 (老王常用手法)"}
+        {"   - ⚡ 短線操作: 跌破5日均線立即賣出避免套牢 (分析師常用手法)"}
         {"   - 📊 RSI配合: RSI升至80過熱慣性跌破→賣出，等KD上勾(非金叉)再進"}
         {"   - 🔍 綜合工具: 配合趨勢線、區間、月均線扣抵避免被巴來巴去"}
         {"   - 📋 日線判斷: 若日線金叉但未破低=買進訊號；日線金叉+破低=等W底"}
 
-        4. 【均線分級應用 - 老王心法】:
+        4. 【均線分級應用 - 分析師心法】:
         {"   - 🚀 噴出行情: 關注5日均線 (短線爆發)"}
         {"   - 📈 波段操作: 觀察10日均線 (中期趨勢)"}
         {"   - ⚡ 短線進出: 以5日均線為主要依據"}
@@ -408,33 +408,33 @@ class OpenAIAnalyzer:
         {"   - 🌃 三聲無奈: 連續三根陰線，空頭來臨"}
         {"   - ✨ 買進條件: 股價站上5、10、20日均線並出現糾結"}
 
-        5. 【三角收斂突破策略 - 老王招數】:
+        5. 【三角收斂突破策略 - 分析師招數】:
         {"   - 🟢 紅K突破: 紅K突破或跳空向上 → 趨勢朝上，可追價進場"}
         {"   - 🔴 黑K跌破: 黑K慣性跌破或跳空向下 → 趨勢轉弱，應避開"}
         {"   - 📊 量能確認: 收斂末端注意成交量放大確認突破"}
         {"   - 🎯 進場時機: 三角形突破配合量增為最佳訊號"}
 
-        6. 【老王風險控管心法】:
+        6. 【分析師風險控管心法】:
         {"   - 🛡️ 多重確認: RSI + 均線 + 成交量 + 型態 (絕不單一指標決策)"}
-        {"   - 🎯 停損設定: 依據前波低點或關鍵支撐 (老王式風控)"}
+        {"   - 🎯 停損設定: 依據前波低點或關鍵支撐 (分析師式風控)"}
         {"   - 📊 量價健檢: 價漲量增=健康，價漲量縮=要小心"}
         {"   - ⚠️ 避免套牢: 寧可錯過不可做錯，保持靈活進出"}
         {"   - 🔄 積分概念: 積分多頭、週死叉時的日線操作策略"}
 
-        **老王策略核心理念**: 「站上均線買，跌破均線賣，配合RSI鈍化看KD，多重確認避免被巴」
+        **分析師策略核心理念**: 「站上均線買，跌破均線賣，配合RSI鈍化看KD，多重確認避免被巴」
 
         CRITICAL ANALYSIS REQUIREMENTS:
         {lang_instruction} 
         
-        請嚴格按照老王完整招數提供分析，具體說明:
-        1. 整體建議 (BUY/SELL/HOLD) - 基於老王六大策略綜合判斷
+        請嚴格按照分析師完整招數提供分析，具體說明:
+        1. 整體建議 (BUY/SELL/HOLD) - 基於分析師六大策略綜合判斷
         2. 信心水準 (0-1) - 多重確認後的信心度
-        3. 關鍵推理 - 明確說明應用了哪些老王具體招數
-        4. 策略因子 - 列出符合的老王策略要點
+        3. 關鍵推理 - 明確說明應用了哪些分析師具體招數
+        4. 策略因子 - 列出符合的分析師策略要點
         5. 具體買進價位 - 精確計算進場價格 (必須提供數值)
-        6. 具體停損價位 - 老王風險管理原則計算的確切停損價 (必須提供數值)
+        6. 具體停損價位 - 分析師風險管理原則計算的確切停損價 (必須提供數值)
         7. 目標價位 - 基於等幅上漲或支撐壓力的獲利目標
-        8. 風險評估 (0-1) - 綜合老王多重確認後的風險判斷
+        8. 風險評估 (0-1) - 綜合分析師多重確認後的風險判斷
 
         **價位計算方法** (請按照以下邏輯精確計算):
         - 買進價位: 如果BUY→當前價±3%內的支撐位或突破價；如果HOLD→關鍵支撐價位

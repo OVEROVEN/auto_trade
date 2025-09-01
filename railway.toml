@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.core"
+dockerfilePath = "Dockerfile.test"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

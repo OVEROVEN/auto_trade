@@ -74,6 +74,7 @@ class User(Base):
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
     free_quota = relationship("FreeQuota", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    redeemed_codes = relationship("RedemptionCode", back_populates="used_by_user")
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.full_name}')>"
@@ -163,6 +164,8 @@ class FreeQuota(Base):
     user_id = Column(UUID(), ForeignKey("users.id"), nullable=False, unique=True, index=True)
     total_free_uses = Column(Integer, nullable=False, default=3)  # 新用戶總免費次數
     used_free_uses = Column(Integer, nullable=False, default=0)  # 已使用的免費次數
+    bonus_credits = Column(Integer, nullable=False, default=0)  # 兌換碼獲得的額外AI分析次數
+    used_bonus_credits = Column(Integer, nullable=False, default=0)  # 已使用的兌換次數
     daily_reset_date = Column(Date, nullable=False, default=date.today)  # 每日重置日期
     daily_used_count = Column(Integer, nullable=False, default=0)  # 今日已使用次數
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -175,6 +178,10 @@ class FreeQuota(Base):
         """檢查用戶是否可以使用AI分析"""
         # 檢查每日配額重置
         self._reset_daily_quota_if_needed()
+        
+        # 優先使用兌換碼獲得的次數
+        if self.used_bonus_credits < self.bonus_credits:
+            return True
         
         # 新用戶3次免費配額
         if self.used_free_uses < self.total_free_uses:
@@ -194,15 +201,23 @@ class FreeQuota(Base):
         # 檢查每日配額重置
         self._reset_daily_quota_if_needed()
         
-        # 優先消耗新用戶配額
-        if self.used_free_uses < self.total_free_uses:
+        # 優先消耗兌換碼獲得的次數
+        if self.used_bonus_credits < self.bonus_credits:
+            self.used_bonus_credits += 1
+        # 其次消耗新用戶配額
+        elif self.used_free_uses < self.total_free_uses:
             self.used_free_uses += 1
         else:
-            # 消耗每日配額
+            # 最後消耗每日配額
             self.daily_used_count += 1
         
         self.updated_at = datetime.utcnow()
         return True
+    
+    def add_bonus_credits(self, credits: int) -> None:
+        """添加兌換碼獲得的額外次數"""
+        self.bonus_credits += credits
+        self.updated_at = datetime.utcnow()
     
     def _reset_daily_quota_if_needed(self):
         """重置每日配額（如果需要）"""
@@ -210,6 +225,11 @@ class FreeQuota(Base):
         if self.daily_reset_date < today:
             self.daily_reset_date = today
             self.daily_used_count = 0
+    
+    @property
+    def remaining_bonus_credits(self) -> int:
+        """剩餘的兌換碼次數"""
+        return max(0, self.bonus_credits - self.used_bonus_credits)
     
     @property
     def remaining_initial_quota(self) -> int:
@@ -222,8 +242,13 @@ class FreeQuota(Base):
         self._reset_daily_quota_if_needed()
         return max(0, 1 - self.daily_used_count)
     
+    @property
+    def total_remaining_quota(self) -> int:
+        """總剩餘次數"""
+        return self.remaining_bonus_credits + self.remaining_initial_quota + self.remaining_daily_quota
+    
     def __repr__(self):
-        return f"<FreeQuota(user_id={self.user_id}, used={self.used_free_uses}/{self.total_free_uses}, daily={self.daily_used_count}/1)>"
+        return f"<FreeQuota(user_id={self.user_id}, bonus={self.remaining_bonus_credits}, free={self.used_free_uses}/{self.total_free_uses}, daily={self.daily_used_count}/1)>"
 
 
 # 數據庫初始化函數

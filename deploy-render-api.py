@@ -26,14 +26,15 @@ def deploy_to_render():
         "rootDir": ".",
         "runtime": "python",
         "buildCommand": "pip install -r requirements-core.txt",
-        "startCommand": "python -m uvicorn src.api.main_core:app --host 0.0.0.0 --port $PORT",
+        "startCommand": "python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT",
         "plan": "free",
         "region": "oregon",
         "envVars": [
             {"key": "ENVIRONMENT", "value": "production"},
             {"key": "DEBUG", "value": "false"},
             {"key": "SERVICE_NAME", "value": "core-api"},
-            {"key": "DATABASE_URL", "value": "sqlite:///./data/trading.db"},
+            {"key": "DATABASE_URL", "value": "sqlite:///tmp/trading.db"},
+            {"key": "JWT_SECRET_KEY", "value": "pI3tqLLwskk4HQ4fSlLOo32VuRsllB3Z_1eMzgrqjmY"},
             {"key": "GOOGLE_CLIENT_ID", "value": "610357573971-t2r6c0b3i8fq8kng1j8e5s4l6jiqiggf.apps.googleusercontent.com"}
         ]
     }

@@ -1,4 +1,4 @@
-# 核心API服務最小化依賴
+# 完整API服務部署依賴 (包含兌換碼功能)
 # 基礎框架
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
@@ -11,22 +11,26 @@ pandas==2.2.2
 numpy==1.26.4
 requests==2.32.3
 
-# 技術分析 (基礎)
+# 技術分析與視覺化
 scipy==1.13.1
 scikit-learn==1.5.1
+mplfinance==0.12.10b0
+matplotlib==3.9.1
+plotly==5.17.0
+kaleido==0.2.1
 
 # 數據庫
 sqlalchemy==2.0.31
 alembic==1.13.2
 
-# 認證
+# 認證與安全
 PyJWT==2.8.0
 python-multipart==0.0.9
 bcrypt==4.1.3
 passlib==1.7.4
 python-jose[cryptography]==3.3.0
 
-# Google OAuth
+# OAuth
 google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 
@@ -43,6 +47,13 @@ pytz==2024.1
 # 異步支持
 aiohttp==3.9.5
 websockets==12.0
+httpx==0.27.0
 
-# 日誌
+# 日誌與監控
 loguru==0.7.2
+
+# 圖像處理 (用於圖表生成)
+Pillow==10.4.0
+
+# 台股數據 (可選，但建議包含)
+twstock==1.3.1
