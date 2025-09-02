@@ -26,12 +26,15 @@ venv/
 env/
 ENV/
 .venv/
-.env
 
-# Environment variables
-.env
+# Environment variables (完整配置)
+.env*
+!.env.example
+!.env.template
+*.env
 .env.local
 .env.production
+.env.development
 
 # IDE
 .vscode/
@@ -70,8 +73,16 @@ temp/
 
 # API Keys and secrets
 config/secrets.py
+config/secrets.json
 *.key
 *.pem
+*secret*
+*api_key*
+*credential*
+secrets.txt
+api_keys.txt
+.openai_key
+.google_credentials.json
 
 # TradingView Charting Library (大文件，通常不提交)
 static/charting_library/
