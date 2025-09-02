@@ -40,7 +40,7 @@ export default function TradingDashboard() {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`http://localhost:8000/analyze/${symbol}`, {
+      const response = await fetch(`http://localhost:8001/analyze/${symbol}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
