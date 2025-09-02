@@ -28,7 +28,7 @@ def create_apprunner_service():
                         "DATABASE_URL": "sqlite:///tmp/trading.db",
                         "JWT_SECRET_KEY": "pI3tqLLwskk4HQ4fSlLOo32VuRsllB3Z_1eMzgrqjmY",
                         "GOOGLE_CLIENT_ID": "610357573971-t2r6c0b3i8fq8kng1j8e5s4l6jiqiggf.apps.googleusercontent.com",
-                        "OPENAI_API_KEY": "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"
+                        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
                     },
                     "StartCommand": "pip install -r requirements-core.txt && python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
                 }
