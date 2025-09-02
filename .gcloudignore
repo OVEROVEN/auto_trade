@@ -1,0 +1,96 @@
+# Google Cloud Build ignore file
+# https://cloud.google.com/cloud-build/docs/build-config#gcloudignore
+
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+*.sqlite3
+data/
+logs/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Documentation (keep only essential)
+README.md
+GOOGLE_CLOUD_DEPLOY_GUIDE.md
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.nyc_output
+
+# Large files that aren't needed for deployment
+screenshots/
+*.png
+*.jpg
+*.gif
+*.pdf
+
+# Backup files  
+*.bak
+*.backup
+*~
+
+# Cloud-specific ignores
+.gcloudignore
