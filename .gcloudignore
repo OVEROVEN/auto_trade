@@ -1,12 +1,8 @@
-# Google Cloud Build ignore file
+# Google Cloud Build ignore file - API Only Deployment
 # https://cloud.google.com/cloud-build/docs/build-config#gcloudignore
 
-# Node.js dependencies
-node_modules/
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/dist/
+# 完全排除前端文件夾（僅部署API）
+frontend/
 
 # Python
 __pycache__/
