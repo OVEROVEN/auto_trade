@@ -1,99 +1,33 @@
-# Cloud Build配置 - AI Trading System自動部署
-# 當push到GitHub時，自動構建並部署到Cloud Run
-
-substitutions:
-  _REGION: asia-northeast1
-  _SERVICE: auto-trade-ai
-  _REPO: cloud-run
-  _MEMORY: 2Gi
-  _CPU: 1
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-  substitution_option: ALLOW_LOOSE
-
 steps:
-  # 步驟1: 檢查項目結構
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-    - '-c'
-    - |
-      echo "🚀 AI Trading System - 開始自動部署"
-      echo "📂 檢查項目結構..."
-      ls -la
-      echo "📋 檢查關鍵文件..."
-      ls -la src/api/
-      ls -la config/
-      echo "📄 檢查依賴文件..."
-      cat requirements-core.txt | head -10
-
-  # 步驟2: 構建Docker鏡像
+  # 步驟 1: 建置 Docker 映像檔
   - name: 'gcr.io/cloud-builders/docker'
     args:
-    - 'build'
-    - '-t'
-    - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA'
-    - '-t'
-    - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:latest'
-    - '-f'
-    - 'Dockerfile.cloudrun'
-    - '.'
-
-  # 步驟3: 推送鏡像到Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: 
-    - 'push'
-    - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA'
-
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}'
+      - '.'
+      
+  # 步驟 2: 將映像檔推送到 Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
-    - 'push' 
-    - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:latest'
-
-  # 步驟4: 部署到Cloud Run
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}'
+      
+  # 步驟 3: 將映像檔部署到 Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
-    - 'run'
-    - 'deploy'
-    - '$_SERVICE'
-    - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA'
-    - '--region=$_REGION'
-    - '--platform=managed'
-    - '--allow-unauthenticated'
-    - '--memory=$_MEMORY'
-    - '--cpu=$_CPU'
-    - '--timeout=900'
-    - '--max-instances=10'
-    - '--concurrency=80'
-    - '--set-env-vars=ENVIRONMENT=production,DEBUG=false,DATABASE_URL=sqlite:///tmp/trading.db,JWT_SECRET_KEY=pI3tqLLwskk4HQ4fSlLOo32VuRsllB3Z_1eMzgrqjmY,GOOGLE_CLIENT_ID=610357573971-t2r6c0b3i8fq8kng1j8e5s4l6jiqiggf.apps.googleusercontent.com'
-    - '--port=8000'
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
 
-  # 步驟5: 獲取部署結果
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    args:
-    - '-c'
-    - |
-      echo "🎉 部署完成！獲取服務信息..."
-      SERVICE_URL=$(gcloud run services describe $_SERVICE --region=$_REGION --format='value(status.url)')
-      echo "🌐 AI Trading System URL: $SERVICE_URL"
-      echo "📚 API文檔: $SERVICE_URL/docs"
-      echo "💚 健康檢查: $SERVICE_URL/health"
-      echo "🎫 兌換碼系統: $SERVICE_URL/api/redemption"
-      echo "📈 股票分析示例: $SERVICE_URL/analyze/AAPL"
-      echo ""
-      echo "✅ 自動部署流程完成！"
-      
-      # 測試健康檢查
-      echo "🧪 測試部署結果..."
-      curl -s -f "$SERVICE_URL/health" && echo "✅ 服務健康檢查通過" || echo "⚠️ 服務可能還在啟動中"
-
-# 推送鏡像到註冊表
+# 指定最終要產出的映像檔
 images:
-- '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA'
-- '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:latest'
-
-# 構建超時設置
-timeout: '1200s'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}'
