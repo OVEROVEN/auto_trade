@@ -1,23 +1,22 @@
-# Railway Optimized Docker - Ultra Simple
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy requirements first for better caching
+# 安裝依賴
 COPY requirements.txt .
-
-# Install Python dependencies only
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY src/ ./src/
-COPY config/ ./config/
+# 複製代碼
+COPY main.py .
 
-# Create data directory
-RUN mkdir -p data logs
-
-# Set Python path to include app directory
+# 設置環境
 ENV PYTHONPATH=/app
+ENV PORT=8080
 
-# Railway uses PORT environment variable
-CMD python -m uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# 健康檢查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8080/health')"
+
+# 啟動
+EXPOSE 8080
+CMD ["python", "main.py"]
