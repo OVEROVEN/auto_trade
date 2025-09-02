@@ -10,11 +10,11 @@
 
 ### 環境變數 ✅
 ```
-OPENAI_API_KEY=sk-proj-...
+OPENAI_API_KEY=[已設置]
 DATABASE_URL=sqlite:///./data/trading.db
-GOOGLE_CLIENT_ID=729797924622-...
-GOOGLE_CLIENT_SECRET=GOCSPX-...
-JWT_SECRET_KEY=pI3tqLLwskk4HQ4fSlLOo32VuRsllB3Z_1eMzgrqjmY
+GOOGLE_CLIENT_ID=[已設置]
+GOOGLE_CLIENT_SECRET=[已設置]
+JWT_SECRET_KEY=[已設置]
 ENVIRONMENT=production
 DEBUG=false
 ```
