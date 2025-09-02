@@ -21,7 +21,6 @@
     "date-fns": "^2.30.0",
     "lucide-react": "^0.294.0",
     "next": "14.0.3",
-    "playwright": "^1.55.0",
     "postcss": "^8",
     "react": "^18",
     "react-dom": "^18",
@@ -30,8 +29,9 @@
     "typescript": "^5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
+    "@playwright/test": "^1.44.0",
     "eslint": "^8",
-    "eslint-config-next": "14.0.3"
+    "eslint-config-next": "14.0.3",
+    "playwright": "^1.44.0"
   }
 }
