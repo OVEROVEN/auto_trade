@@ -13,6 +13,7 @@ import { AuthButton } from '../components/AuthButton';
 import { RedemptionCode } from '../components/RedemptionCode';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
+import { analyzeStock } from '../lib/api';
 
 export default function TradingDashboard() {
   const { t, language } = useLanguage();
@@ -26,31 +27,14 @@ export default function TradingDashboard() {
     // 這會觸發所有組件的更新
   };
 
-  const analyzeStock = async (symbol: string) => {
+  const handleAnalyzeStock = async (symbol: string) => {
     setLoading(true);
     try {
-      // 獲取認證 token
-      const token = localStorage.getItem('auth_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      // 如果有 token，添加 Authorization header
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`http://localhost:8001/analyze/${symbol}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          symbol,
-          period: '3mo',
-          include_ai: true,
-          language: language // 傳送當前語言設定給 AI 分析
-        })
+      const data = await analyzeStock(symbol, {
+        period: '3mo',
+        include_ai: true,
+        language: language // 傳送當前語言設定給 AI 分析
       });
-      const data = await response.json();
       setAnalysisData(data);
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -90,7 +74,7 @@ export default function TradingDashboard() {
           <StockSearch 
             selectedSymbol={selectedSymbol}
             onSymbolChange={handleSymbolChange}
-            onAnalyze={analyzeStock}
+            onAnalyze={handleAnalyzeStock}
             loading={loading}
           />
         </div>

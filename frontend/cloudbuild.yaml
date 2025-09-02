@@ -1,0 +1,44 @@
+steps:
+  # 步驟 1: 建置 Next.js Docker 映像檔
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_FRONTEND_SERVICE}:${COMMIT_SHA}'
+      - '-f'
+      - 'frontend/Dockerfile'
+      - './frontend'
+      
+  # 步驟 2: 將映像檔推送到 Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_FRONTEND_SERVICE}:${COMMIT_SHA}'
+      
+  # 步驟 3: 將前端部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_FRONTEND_SERVICE}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_FRONTEND_SERVICE}:${COMMIT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_API_URL=${_API_URL}'
+
+# 指定最終要產出的映像檔
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_FRONTEND_SERVICE}:${COMMIT_SHA}'
+
+# 替換變數
+substitutions:
+  _REGION: 'asia-northeast1'
+  _AR_REPO: 'auto-trade-repo'
+  _FRONTEND_SERVICE: 'auto-trade-frontend'
+  _API_URL: 'https://auto-trade-ai-xxx.a.run.app'  # 將替換為實際的API服務URL
