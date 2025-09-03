@@ -31,3 +31,6 @@ steps:
 # 指定最終要產出的映像檔
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
