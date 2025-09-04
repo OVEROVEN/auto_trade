@@ -1,0 +1,41 @@
+# .github/workflows/main.yml
+
+name: Deploy to Google Cloud Run
+
+# 當有程式碼推送到 master 分支時觸發
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  deploy:
+    name: Build and Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    
+    # 授權 GitHub Actions 獲取 GCP 的身份權杖
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    # 步驟 1: 將您的程式碼下載到虛擬機中
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 步驟 2: 透過 Workload Identity Federation 登入 Google Cloud
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        # Authenticate to Google Cloud using Workload Identity Federation
+        workload_identity_provider: 'projects/610357573971/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+        service_account: '610357573971-compute@developer.gserviceaccount.com'
+
+    # 步驟 3: 設定 gcloud CLI
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    # 步驟 4: 執行我們之前手動執行的指令
+    - name: Build and Deploy with Cloud Build
+      run: |-
+        gcloud builds submit auto_trade --config=auto_trade/cloudbuild.yaml --project=ai-trading-system-470613
