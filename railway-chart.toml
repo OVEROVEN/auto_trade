@@ -1,0 +1,11 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.chart"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+
+[variables]
+ENVIRONMENT = "production"
+DEBUG = "false"
+SERVICE_NAME = "chart-service"

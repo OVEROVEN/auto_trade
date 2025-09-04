@@ -1,343 +1,358 @@
-# AI Trading System
+# 🚀 AI Trading System - 完整部署指南
 
-A comprehensive Python-based trading analysis system that combines technical analysis, pattern recognition, and AI-powered insights for stock market analysis.
+## 📋 項目簡介
 
-## Features
+AI Trading System 是一個專業的 AI 驱動股票分析平台，集成了技術分析、AI 建議、多市場支援（美股 + 台股）和 Google OAuth 認證。
 
-### 🚀 Core Capabilities
-- **Multi-Market Support**: US stocks (NYSE, NASDAQ) and Taiwan stock market
-- **Technical Analysis**: 15+ technical indicators (RSI, MACD, Bollinger Bands, etc.)
-- **Pattern Recognition**: Head & Shoulders, Triangles, Double Tops/Bottoms, Breakouts
-- **AI Integration**: OpenAI-powered analysis and trading recommendations
-- **Real-time Data**: Live market data and WebSocket streaming
-- **RESTful API**: FastAPI-based endpoints for all functionality
-- **Containerized**: Docker and Docker Compose ready
+### ✨ 核心功能
+- 🤖 **AI 分析**：基於 GPT-4o 的智能投資建議
+- 📊 **技術指標**：RSI、MACD、移動平均線等 15+ 指標
+- 🔍 **形態識別**：自動識別頭肩頂、雙重頂底等經典形態
+- 🌍 **多市場**：支援美股 (AAPL, GOOGL) 和台股 (2330.TW)
+- 🔐 **安全認證**：Google OAuth + JWT token 系統
+- 📈 **視覺化**：K線圖表 + 技術指標圖表
+- 💳 **配額系統**：用戶使用配額和兌換碼功能
 
-### 📊 Technical Indicators
-- Moving Averages (SMA, EMA)
-- RSI (Relative Strength Index)
-- MACD (Moving Average Convergence Divergence)
-- Bollinger Bands
-- Stochastic Oscillator
-- Williams %R
-- ATR (Average True Range)
-- ADX (Average Directional Index)
-- Volume indicators (OBV, PVT)
+## 🛠️ 快速開始
 
-### 🎯 Pattern Recognition
-- Support and Resistance levels
-- Breakout patterns
-- Head and Shoulders
-- Double Top/Bottom
-- Triangle patterns (Ascending, Descending, Symmetrical)
-- Flag and Pennant patterns
+### 步驟 1: 環境準備
 
-### 🤖 AI Analysis
-- Technical data analysis using GPT-4
-- Chart image analysis with GPT-4 Vision
-- Market sentiment analysis
-- Automated trading strategy generation
-
-## Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- OpenAI API key (for AI features)
-- Python 3.11+ (for local development)
-
-### Using Docker (Recommended)
-
-1. **Clone and setup**:
 ```bash
-git clone <repository-url>
+# 克隆項目
+git clone <your-repo-url>
 cd auto_trade
+
+# 安裝依賴
+pip install -r requirements-core.txt
+
+# 或使用 Google Cloud 優化版本
+pip install -r requirements-gcloud.txt
+```
+
+### 步驟 2: 環境變數配置
+
+```bash
+# 複製環境變數範本
 cp .env.example .env
+
+# 編輯 .env 檔案，填入您的實際配置
+nano .env
 ```
 
-2. **Configure environment variables**:
-Edit `.env` file with your API keys:
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-DATABASE_PASSWORD=secure_password
-REDIS_PASSWORD=redis_password
-```
+### 步驟 3: 配置驗證
 
-3. **Start the system**:
 ```bash
-# Production environment
-docker-compose up -d
+# 檢查配置是否正確
+python test_config.py
 
-# Development environment
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# 應該看到類似輸出：
+# ✅ OpenAI API configured: True
+# ✅ Google OAuth configured: True
 ```
 
-4. **Access the API**:
-- API Documentation: http://localhost:8000/docs
-- Health Check: http://localhost:8000/health
-- PgAdmin (dev): http://localhost:5050
+### 步驟 4: 啟動應用
 
-### Local Development
-
-1. **Install dependencies**:
 ```bash
-pip install -r requirements.txt
+# 啟動後端服務
+python main_integrated.py
+
+# 後端將運行在: http://localhost:8080
+# API 文檔: http://localhost:8080/docs
 ```
 
-2. **Set environment variables**:
+### 步驟 5: 啟動前端 (可選)
+
 ```bash
-export OPENAI_API_KEY="your_key_here"
-export DATABASE_URL="postgresql://user:pass@localhost:5432/trading_db"
+# 進入前端目錄
+cd frontend
+
+# 安裝依賴
+npm install
+
+# 啟動前端
+npm run dev
+
+# 前端將運行在: http://localhost:3000
 ```
 
-3. **Run the application**:
+## 🔧 環境變數配置詳解
+
+### 📋 **必填配置**
+
+#### 🤖 OpenAI API (AI 功能)
 ```bash
-python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+# 從 https://platform.openai.com/ 獲取
+OPENAI_API_KEY=sk-proj-your-openai-api-key-here
 ```
 
-## API Usage Examples
-
-### Analyze a Stock
+#### 🔐 JWT 認證
 ```bash
-curl -X POST "http://localhost:8000/analyze/AAPL" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "symbol": "AAPL",
-    "period": "3mo",
-    "include_ai": true,
-    "include_patterns": true
-  }'
+# 生成強隨機字串
+# python -c "import secrets; print(secrets.token_urlsafe(32))"
+JWT_SECRET=your-secure-jwt-secret-here
 ```
 
-### Get Trading Signals
+#### 🌐 Google OAuth (社交登入)
 ```bash
-curl "http://localhost:8000/signals/AAPL"
+# 從 https://console.developers.google.com/ 獲取
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-### Detect Patterns
+### 📋 **可選配置**
+
+#### 🗄️ 資料庫
 ```bash
-curl "http://localhost:8000/patterns/TSLA"
+# 預設使用 SQLite (適合開發/小型部署)
+DATABASE_URL=sqlite:///./trading.db
+
+# 生產環境建議使用 PostgreSQL
+# DATABASE_URL=postgresql://user:password@localhost:5432/trading_db
 ```
 
-### WebSocket Stream (JavaScript)
-```javascript
-const ws = new WebSocket('ws://localhost:8000/stream/AAPL');
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    console.log('Real-time update:', data);
-};
-```
-
-## Supported Symbols
-
-### US Market
-- AAPL (Apple)
-- GOOGL (Google)
-- TSLA (Tesla)
-- SPY (S&P 500 ETF)
-- QQQ (NASDAQ ETF)
-- And any valid US stock symbol
-
-### Taiwan Market
-- 2330.TW (TSMC)
-- 2317.TW (Hon Hai)
-- 0050.TW (Taiwan 50 ETF)
-- And any valid Taiwan stock symbol
-
-## Configuration
-
-### Environment Variables
-Key configuration options in `.env`:
-
-```env
-# API Keys
-OPENAI_API_KEY=your_openai_api_key
-ALPHA_VANTAGE_API_KEY=optional_alpha_vantage_key
-
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/trading_db
-DATABASE_PASSWORD=secure_password
-
-# Redis
-REDIS_URL=redis://localhost:6379/0
-REDIS_PASSWORD=redis_password
-
-# Trading Settings
-DEFAULT_STOP_LOSS=0.02
-DEFAULT_POSITION_SIZE=0.1
-UPDATE_INTERVAL_MINUTES=15
-
-# Application
+#### 🌐 服務設定
+```bash
+PORT=8080
 ENVIRONMENT=development
 DEBUG=true
-LOG_LEVEL=INFO
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
-### Trading Parameters
-Customize trading analysis in `config/settings.py`:
-- Technical indicator periods
-- Pattern recognition sensitivity
-- Risk management settings
-- AI analysis parameters
+### 🔍 配置檢查工具
 
-## Architecture
+使用內建工具驗證配置：
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FastAPI       │    │   Data Fetchers │    │   Analyzers     │
-│   REST API      │◄───┤   - US Stocks   │◄───┤   - Technical   │
-│   WebSocket     │    │   - TW Stocks   │    │   - Patterns    │
-└─────────────────┘    └─────────────────┘    │   - AI Analysis │
-         │                                     └─────────────────┘
-         ▼                                              │
-┌─────────────────┐    ┌─────────────────┐             │
-│   PostgreSQL    │    │     Redis       │             │
-│   (TimescaleDB) │    │    (Cache)      │             │
-└─────────────────┘    └─────────────────┘             │
-         ▲                                              │
-         └──────────────────────────────────────────────┘
-```
-
-## Development
-
-### Project Structure
-```
-trading-system/
-├── src/
-│   ├── data_fetcher/       # Market data collection
-│   ├── analysis/           # Technical & AI analysis
-│   ├── strategy/           # Trading strategies
-│   ├── backtesting/        # Strategy backtesting
-│   └── api/               # FastAPI application
-├── config/                # Configuration management
-├── tests/                 # Test suite
-├── docker-compose.yml     # Production deployment
-├── docker-compose.dev.yml # Development environment
-└── requirements.txt       # Python dependencies
-```
-
-### Running Tests
 ```bash
-# Unit tests
-pytest tests/
-
-# Integration tests
-pytest tests/integration/
-
-# With coverage
-pytest --cov=src tests/
+python test_config.py
 ```
 
-### Adding New Features
+**輸出範例：**
+```
+🔧 AI Trading System - 配置檢查工具
+==================================================
+✅ 統一配置模塊已載入
 
-1. **New Technical Indicator**:
-   - Add function to `src/analysis/technical_indicators.py`
-   - Update `IndicatorAnalyzer.calculate_all_indicators()`
+📊 服務狀態:
 
-2. **New Pattern**:
-   - Add detection method to `src/analysis/pattern_recognition.py`
-   - Update `PatternRecognition.analyze_all_patterns()`
+🔹 Openai:
+  ✅ configured: True
+  📋 model: gpt-4o
+  📋 api_key_preview: sk-proj-...
 
-3. **New Data Source**:
-   - Create new fetcher in `src/data_fetcher/`
-   - Update API endpoints to support new source
+🔹 Google_oauth:
+  ✅ configured: True
+  📋 client_id_preview: 1234567890...
 
-## Deployment
+🔍 配置驗證:
+✅ 所有關鍵配置都正確
+```
 
-### Production Deployment
+## ☁️ 部署指南
+
+### 🌟 本地開發
 ```bash
-# Build and deploy
-docker-compose -f docker-compose.yml --profile production up -d
+# 使用統一的啟動腳本
+python main_integrated.py
 
-# With monitoring
-docker-compose -f docker-compose.yml --profile production --profile monitoring up -d
+# 或使用 uvicorn (更多控制)
+uvicorn main_integrated:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-### Cloud Deployment (AWS)
-1. Set up ECS cluster
-2. Configure RDS PostgreSQL
-3. Deploy using provided Terraform scripts (coming soon)
+### 🐳 Docker 部署
+```bash
+# 使用 Docker Compose (推薦)
+docker-compose up -d
 
-### Environment-Specific Configs
-- **Development**: Hot reloading, debug logs, dev databases
-- **Production**: Optimized builds, health checks, monitoring
-- **Testing**: Isolated databases, mocked external APIs
+# 或手動建置
+docker build -f Dockerfile.integrated -t ai-trading-system .
+docker run -p 8080:8080 --env-file .env ai-trading-system
+```
 
-## Monitoring and Logging
+### ☁️ Google Cloud Run 部署
 
-### Health Checks
-- Application: `/health`
-- Database connectivity
-- External API availability
-- Market status monitoring
+#### 前置準備
+```bash
+# 1. 啟用必要服務
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com
 
-### Logging
-- Structured JSON logging
-- Configurable log levels
-- Separate logs for different components
-- Error tracking and alerting
+# 2. 創建 Artifact Registry
+gcloud artifacts repositories create ai-trading-repo \
+    --repository-format=docker \
+    --location=asia-northeast1
 
-### Monitoring (Optional)
-- Prometheus metrics collection
-- Grafana dashboards
-- Performance monitoring
-- Alert management
+# 3. 設置 Secret Manager
+echo "your-openai-api-key" | gcloud secrets create openai-api-key --data-file=-
+echo "your-jwt-secret" | gcloud secrets create jwt-secret --data-file=-
+```
 
-## API Documentation
+#### 自動部署
+```bash
+# 使用 Cloud Build 自動部署
+gcloud builds submit --config cloudbuild-backend.yaml
+```
 
-Full API documentation is available at `/docs` when running the application.
+#### 手動部署
+```bash
+# 建置映像
+docker build -f Dockerfile.cloudrun.fixed -t gcr.io/YOUR_PROJECT_ID/ai-trading-backend .
 
-### Key Endpoints
-- `POST /analyze/{symbol}` - Comprehensive stock analysis
-- `GET /signals/{symbol}` - Trading signals
-- `GET /patterns/{symbol}` - Detected patterns
-- `GET /symbols` - Available symbols
-- `WS /stream/{symbol}` - Real-time updates
+# 推送映像
+docker push gcr.io/YOUR_PROJECT_ID/ai-trading-backend
 
-## Troubleshooting
+# 部署到 Cloud Run
+gcloud run deploy ai-trading-system-backend \
+    --image gcr.io/YOUR_PROJECT_ID/ai-trading-backend \
+    --region asia-northeast1 \
+    --platform managed \
+    --allow-unauthenticated \
+    --set-secrets "OPENAI_API_KEY=openai-api-key:latest,JWT_SECRET=jwt-secret:latest"
+```
 
-### Common Issues
+### 🚂 Railway 部署
+```bash
+# 1. 安裝 Railway CLI
+npm install -g @railway/cli
 
-1. **OpenAI API Errors**:
-   - Verify API key is set correctly
-   - Check API quota and billing
-   - Review rate limiting
+# 2. 登入並初始化
+railway login
+railway init
 
-2. **Data Fetching Issues**:
-   - Check internet connectivity
-   - Verify symbol format (e.g., "2330.TW" for Taiwan stocks)
-   - Review market hours
+# 3. 設置環境變數
+railway variables set OPENAI_API_KEY=your-key
+railway variables set GOOGLE_CLIENT_ID=your-id
+railway variables set JWT_SECRET=your-secret
 
-3. **Docker Issues**:
-   - Ensure Docker daemon is running
-   - Check port availability
-   - Review container logs: `docker-compose logs trading_app`
+# 4. 部署
+railway up
+```
 
-### Performance Optimization
-- Use Redis caching for frequent requests
-- Implement connection pooling for databases
-- Optimize data fetching batch sizes
-- Monitor memory usage for large datasets
+### ⚡ Render 部署
+1. 連接 GitHub repository
+2. 選擇 Web Service
+3. 設置環境變數：
+   - `OPENAI_API_KEY`
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `JWT_SECRET`
+4. 使用 `requirements-core.txt`
+5. 啟動命令：`python main_integrated.py`
 
-## Contributing
+## 📖 API 使用指南
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+### 🔍 健康檢查
+```bash
+curl http://localhost:8080/health
+```
 
-## License
+### 📊 股票分析
+```bash
+# 基礎分析
+curl -X POST "http://localhost:8080/analyze/AAPL" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "AAPL", "include_ai": false}'
 
-[Your License Here]
+# AI 增強分析 (需要認證)
+curl -X POST "http://localhost:8080/analyze/AAPL" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"symbol": "AAPL", "include_ai": true}'
+```
 
-## Disclaimer
+### 🔐 Google OAuth 登入流程
+1. 訪問：`http://localhost:8080/api/auth/google`
+2. 完成 Google 認證
+3. 獲得 JWT token
+4. 使用 token 訪問受保護的 API
 
-This software is for educational and research purposes only. It does not constitute financial advice. Always consult with qualified financial advisors before making investment decisions.
+### 📈 支援的股票代碼
+- **美股**：AAPL, GOOGL, MSFT, AMZN, TSLA, META, NVDA
+- **台股**：2330.TW (台積電), 2317.TW (鴻海) 等
 
-## Support
+## 🔧 開發指南
 
-For issues and questions:
-- Check the documentation
-- Review common troubleshooting steps
-- Open an issue on GitHub
-- Check the API health endpoint for system status
+### 📁 項目結構
+```
+auto_trade/
+├── main_integrated.py          # 主應用程式
+├── config/
+│   ├── __init__.py
+│   └── api_config.py          # 統一配置管理
+├── frontend/                  # 前端應用 (Next.js)
+├── .env.example              # 環境變數範本
+├── requirements-core.txt     # 核心依賴
+├── requirements-gcloud.txt   # Google Cloud 優化依賴
+├── test_config.py           # 配置驗證工具
+├── Dockerfile.cloudrun.fixed # Google Cloud Run Dockerfile
+├── cloudbuild-backend.yaml  # Cloud Build 配置
+└── README.md               # 本檔案
+```
+
+### 🧪 測試
+```bash
+# 配置測試
+python test_config.py
+
+# API 測試
+curl http://localhost:8080/docs  # Swagger UI
+
+# 功能測試
+python -c "
+from config import get_openai_client, is_openai_configured
+if is_openai_configured():
+    client = get_openai_client()
+    print('✅ OpenAI client 設定成功')
+else:
+    print('❌ OpenAI 未設定')
+"
+```
+
+### 📊 監控和日誌
+```bash
+# 查看應用日誌
+tail -f logs/trading.log
+
+# Google Cloud Run 日誌
+gcloud run services logs read ai-trading-system-backend --region asia-northeast1
+
+# 健康檢查
+curl http://localhost:8080/health
+```
+
+## ❓ 常見問題
+
+### Q: AI 功能不可用？
+A: 檢查 `OPENAI_API_KEY` 是否正確設置：
+```bash
+python test_config.py
+# 應該顯示: ✅ OpenAI API configured: True
+```
+
+### Q: Google 登入失敗？
+A: 確認以下設定：
+1. `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET` 正確
+2. Google Console 中已添加正確的 redirect URI
+3. OAuth consent screen 已設定
+
+### Q: 圖表顯示亂碼？
+A: 系統已自動配置中文字體支援，如仍有問題請檢查系統字體安裝。
+
+### Q: 部署到雲端後無法訪問？
+A: 檢查：
+1. 環境變數是否正確設置在雲端平台
+2. 端口配置 (預設 8080)
+3. CORS 設定是否包含前端域名
+
+## 📞 技術支援
+
+- 📖 **完整文檔**：查看項目內的各種 `.md` 檔案
+- 🔧 **配置問題**：執行 `python test_config.py`
+- 🐛 **問題回報**：請提供詳細的錯誤訊息和配置狀態
+- 💬 **功能建議**：歡迎提出改進建議
+
+## 📄 授權
+
+本項目採用 MIT 授權條款。
+
+---
+
+**🎉 享受 AI 驅動的智能交易分析！**

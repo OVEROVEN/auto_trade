@@ -1,0 +1,40 @@
+# 整合版Docker配置 - 適合Google Cloud部署
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安裝基礎系統依賴
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# 複製依賴文件
+COPY requirements-minimal.txt .
+
+# 安裝Python依賴
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-minimal.txt
+
+# 複製應用代碼
+COPY main_integrated.py .
+COPY .env* ./
+
+# 設置環境變數
+ENV PYTHONPATH=/app
+ENV ENVIRONMENT=production
+ENV DATABASE_URL=sqlite:///tmp/trading.db
+
+# Cloud Run 會自動設置 PORT
+ENV PORT=8000
+EXPOSE $PORT
+
+# 創建資料庫目錄
+RUN mkdir -p /tmp
+
+# 健康檢查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health || exit 1
+
+# 啟動命令
+CMD python main_integrated.py

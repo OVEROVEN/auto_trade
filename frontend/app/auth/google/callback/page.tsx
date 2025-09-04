@@ -24,36 +24,26 @@ export default function GoogleCallbackPage() {
     
     // 標記為已處理，防止重複執行
     setHasProcessed(true);
-      
-    const { code, state } = urlParams;
+
+    // 檢查URL參數
+    const login = searchParams.get('login');
+    const token = searchParams.get('token');
+    const email = searchParams.get('email');
+    const name = searchParams.get('name');
+    const error = searchParams.get('error');
     
-    if (!code || !state) {
+    if (error) {
       setStatus('error');
-      setError('缺少必要的授權參數');
+      setError(decodeURIComponent(error) || 'Google登入失敗');
       return;
     }
-
-    try {
-      // 發送授權碼到後端
-      const response = await fetch('http://localhost:8000/api/auth/google/callback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code,
-          state,
-          redirect_uri: window.location.origin + '/auth/google/callback'
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
+    
+    if (login === 'success' && token) {
+      try {
         // 保存token到localStorage
-        localStorage.setItem('auth_token', data.access_token);
+        localStorage.setItem('auth_token', token);
         
-        // 刷新用戶信息，refreshUserInfo現在會強制讀取localStorage
+        // 刷新用戶信息
         await refreshUserInfo();
         
         setStatus('success');
@@ -62,17 +52,16 @@ export default function GoogleCallbackPage() {
         setTimeout(() => {
           router.push('/');
         }, 2000);
-      } else {
-        const errorData = await response.json();
+      } catch (error) {
+        console.error('Token processing error:', error);
         setStatus('error');
-        setError(errorData.detail || 'Google登入失敗');
+        setError('處理登入令牌時發生錯誤');
       }
-    } catch (error) {
-      console.error('Google callback error:', error);
+    } else {
       setStatus('error');
-      setError('處理Google登入回調時發生錯誤');
+      setError('缺少必要的授權參數');
     }
-  }, [hasProcessed, urlParams, refreshUserInfo, router]);
+  }, [hasProcessed, searchParams, refreshUserInfo, router]);
 
   useEffect(() => {
     handleCallback();

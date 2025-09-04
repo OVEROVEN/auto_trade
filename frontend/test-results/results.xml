@@ -1,147 +1,264 @@
-<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="14.833604">
-<testsuite name="multilingual-trading-price-focused.spec.js" timestamp="2025-08-30T02:31:46.851Z" hostname="chromium" tests="2" failures="0" skipped="0" time="22.651" errors="0">
-<testcase name="Multilingual Trading Price Display - Focused Tests › TSLA - Traditional Chinese to English Language Switch Test" classname="multilingual-trading-price-focused.spec.js" time="14.094">
+<testsuites id="" name="" tests="9" failures="5" skipped="0" errors="0" time="67.71511699999999">
+<testsuite name="oauth-login-test.spec.js" timestamp="2025-09-03T15:57:41.562Z" hostname="chromium" tests="9" failures="5" skipped="0" time="315.437" errors="0">
+<testcase name="Google OAuth 登入和註冊測試 › 檢查登入按鈕是否存在" classname="oauth-login-test.spec.js" time="3.822">
 <system-out>
-<![CDATA[
-🇹🇼 🇺🇸 === Testing TSLA: Traditional Chinese ↔ English Trading Price Display ===
-1. Navigating to http://localhost:3000...
-2. Switching to Traditional Chinese...
-✓ Switched to zh-TW (🇹🇼) using selector: button:has-text("🇹🇼")
-✓ Successfully switched to Traditional Chinese
-
-3. Searching for TSLA stock...
-✓ TSLA search completed successfully
-
-4. Checking for AI analysis and trading price elements in Chinese...
-Found 10 AI analysis panels
-  ❌ Error checking "📊 交易價位建議": locator.count: Unknown engine "text*" while parsing selector text*="📊 交易價位建議"
-  ❌ Error checking "🎯 建議進場價": locator.count: Unknown engine "text*" while parsing selector text*="🎯 建議進場價"
-  ❌ Error checking "🚀 目標價位": locator.count: Unknown engine "text*" while parsing selector text*="🚀 目標價位"
-  ❌ Error checking "🛑 停損價位": locator.count: Unknown engine "text*" while parsing selector text*="🛑 停損價位"
-  ❌ Error checking "📈 潛在報酬": locator.count: Unknown engine "text*" while parsing selector text*="📈 潛在報酬"
-Chinese labels found: []
-
-5. Switching to English...
-✓ Switched to en (🇺🇸) using selector: button:has-text("🇺🇸")
-✓ Successfully switched to English
-  ✓ Found "📊 Trading Price Levels" (1 elements)
-  ✓ Found "🎯 Entry Price" (1 elements)
-  ✓ Found "🚀 Target Price" (1 elements)
-  ✓ Found "🛑 Stop Loss" (1 elements)
-  ✓ Found "📈 Potential Return" (1 elements)
-English labels found: [
-  { label: [32m'📊 Trading Price Levels'[39m, count: [33m1[39m },
-  { label: [32m'🎯 Entry Price'[39m, count: [33m1[39m },
-  { label: [32m'🚀 Target Price'[39m, count: [33m1[39m },
-  { label: [32m'🛑 Stop Loss'[39m, count: [33m1[39m },
-  { label: [32m'📈 Potential Return'[39m, count: [33m1[39m }
-]
-
-6. Testing rapid language switching...
-  Switch cycle 1/3
-✓ Switched to zh-TW (🇹🇼) using selector: button:has-text("🇹🇼")
-✓ Switched to en (🇺🇸) using selector: button:has-text("🇺🇸")
-  Switch cycle 2/3
-✓ Switched to zh-TW (🇹🇼) using selector: button:has-text("🇹🇼")
-✓ Switched to en (🇺🇸) using selector: button:has-text("🇺🇸")
-  Switch cycle 3/3
-✓ Switched to zh-TW (🇹🇼) using selector: button:has-text("🇹🇼")
-✓ Switched to en (🇺🇸) using selector: button:has-text("🇺🇸")
-✓ Rapid language switching test completed
-
-7. Verifying price format remains USD...
-✓ Found 4 USD price elements
-✅ TSLA multilingual test completed successfully!
-
-=== MULTILINGUAL TRADING PRICE FOCUSED TEST REPORT ===
-Timestamp: 2025-08-30T02:31:47.095Z
-Total Tests: 1
-Completed: 1
-Failed: 0
-
-=== DETAILED RESULTS ===
-
-TSLA Traditional Chinese to English Switch:
-  Status: COMPLETED
-  Chinese Labels Found: 0
-  English Labels Found: 5
-    - "📊 Trading Price Levels" (1)
-    - "🎯 Entry Price" (1)
-    - "🚀 Target Price" (1)
-    - "🛑 Stop Loss" (1)
-    - "📈 Potential Return" (1)
-  USD Prices Found: 4
-    Sample prices: $333.87, $333.87, $319.00, $341.55
-
-📊 Report saved to: test-results/multilingual-focused-report.json
-📸 Screenshots available:
-  - multilingual-focused-01-zh-tw-initial.png
-  - multilingual-focused-02-zh-tw-tsla.png
-  - multilingual-focused-03-en-tsla.png
-  - multilingual-focused-04-final.png
-  - multilingual-focused-05-meta-en-initial.png
-  - multilingual-focused-06-meta-zh-tw.png
-  - multilingual-focused-07-meta-en-final.png
-
-=== FOCUSED MULTILINGUAL TEST COMPLETED ===
+<![CDATA[✅ 登入按鈕存在並可見
 ]]>
 </system-out>
 </testcase>
-<testcase name="Multilingual Trading Price Display - Focused Tests › META - Language Switch Responsiveness Test" classname="multilingual-trading-price-focused.spec.js" time="8.557">
+<testcase name="Google OAuth 登入和註冊測試 › 點擊登入按鈕測試" classname="oauth-login-test.spec.js" time="60.235">
+<failure message="oauth-login-test.spec.js:20:3 點擊登入按鈕測試" type="FAILURE">
+<![CDATA[  [chromium] › oauth-login-test.spec.js:20:3 › Google OAuth 登入和註冊測試 › 點擊登入按鈕測試 ─────────────────────
+
+    Test timeout of 60000ms exceeded while running "beforeEach" hook.
+
+      4 | test.describe('Google OAuth 登入和註冊測試', () => {
+      5 |   
+    > 6 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      7 |     // 前往主頁面
+      8 |     await page.goto('/');
+      9 |     await page.waitForLoadState('networkidle');
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:6:8
+
+    Error: page.waitForLoadState: Test timeout of 60000ms exceeded.
+
+       7 |     // 前往主頁面
+       8 |     await page.goto('/');
+    >  9 |     await page.waitForLoadState('networkidle');
+         |                ^
+      10 |   });
+      11 |
+      12 |   test('檢查登入按鈕是否存在', async ({ page }) => {
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/error-context.md
+]]>
+</failure>
 <system-out>
 <![CDATA[
-🚀 === Testing META: Language Switch Responsiveness ===
-1. Starting with English interface...
-✓ META search completed
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/test-failed-1.png]]
 
-2. Switching to Traditional Chinese...
-✓ Switched to zh-TW (🇹🇼) using selector: button:has-text("🇹🇼")
-Chinese interface elements found: [
-  { label: [32m'AI 分析'[39m, count: [33m1[39m },
-  { label: [32m'市場資料'[39m, count: [33m1[39m },
-  { label: [32m'績效表現'[39m, count: [33m1[39m },
-  { label: [32m'AI 建議'[39m, count: [33m1[39m },
-  { label: [32m'分析'[39m, count: [33m1[39m },
-  { label: [32m'股票代號'[39m, count: [33m1[39m },
-  { label: [32m'狀態'[39m, count: [33m1[39m },
-  { label: [32m'當前價格'[39m, count: [33m1[39m }
-]
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/video.webm]]
 
-3. Switching back to English...
-✓ Switched to en (🇺🇸) using selector: button:has-text("🇺🇸")
-English interface elements found: [
-  { label: [32m'AI Analysis'[39m, count: [33m1[39m },
-  { label: [32m'Market Data'[39m, count: [33m1[39m },
-  { label: [32m'Performance'[39m, count: [33m1[39m },
-  { label: [32m'Analyze'[39m, count: [33m1[39m },
-  { label: [32m'Symbol'[39m, count: [33m1[39m },
-  { label: [32m'Status'[39m, count: [33m1[39m },
-  { label: [32m'Current Price'[39m, count: [33m1[39m }
-]
-✅ META language responsiveness test completed successfully!
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-點擊登入按鈕測試-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 檢查Google OAuth配置" classname="oauth-login-test.spec.js" time="3.784">
+<system-out>
+<![CDATA[✅ 前端JavaScript環境正常
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 測試後端認證端點" classname="oauth-login-test.spec.js" time="60.226">
+<failure message="oauth-login-test.spec.js:51:3 測試後端認證端點" type="FAILURE">
+<![CDATA[  [chromium] › oauth-login-test.spec.js:51:3 › Google OAuth 登入和註冊測試 › 測試後端認證端點 ─────────────────────
 
-=== MULTILINGUAL TRADING PRICE FOCUSED TEST REPORT ===
-Timestamp: 2025-08-30T02:31:47.094Z
-Total Tests: 1
-Completed: 1
-Failed: 0
+    Test timeout of 60000ms exceeded while running "beforeEach" hook.
 
-=== DETAILED RESULTS ===
+      4 | test.describe('Google OAuth 登入和註冊測試', () => {
+      5 |   
+    > 6 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      7 |     // 前往主頁面
+      8 |     await page.goto('/');
+      9 |     await page.waitForLoadState('networkidle');
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:6:8
 
-META Language Switch Responsiveness:
-  Status: COMPLETED
+    Error: page.waitForLoadState: Test timeout of 60000ms exceeded.
 
-📊 Report saved to: test-results/multilingual-focused-report.json
-📸 Screenshots available:
-  - multilingual-focused-01-zh-tw-initial.png
-  - multilingual-focused-02-zh-tw-tsla.png
-  - multilingual-focused-03-en-tsla.png
-  - multilingual-focused-04-final.png
-  - multilingual-focused-05-meta-en-initial.png
-  - multilingual-focused-06-meta-zh-tw.png
-  - multilingual-focused-07-meta-en-final.png
+       7 |     // 前往主頁面
+       8 |     await page.goto('/');
+    >  9 |     await page.waitForLoadState('networkidle');
+         |                ^
+      10 |   });
+      11 |
+      12 |   test('檢查登入按鈕是否存在', async ({ page }) => {
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:9:16
 
-=== FOCUSED MULTILINGUAL TEST COMPLETED ===
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/video.webm]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-測試後端認證端點-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 檢查後端OAuth端點" classname="oauth-login-test.spec.js" time="6.046">
+<system-out>
+<![CDATA[/api/auth/google/login: 200
+/api/auth/google/callback: 200
+/api/auth/register: 404
+/api/auth/login: 404
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 檢查前端是否有Google OAuth按鈕" classname="oauth-login-test.spec.js" time="60.143">
+<failure message="oauth-login-test.spec.js:85:3 檢查前端是否有Google OAuth按鈕" type="FAILURE">
+<![CDATA[  [chromium] › oauth-login-test.spec.js:85:3 › Google OAuth 登入和註冊測試 › 檢查前端是否有Google OAuth按鈕 ────────
+
+    Test timeout of 60000ms exceeded while running "beforeEach" hook.
+
+      4 | test.describe('Google OAuth 登入和註冊測試', () => {
+      5 |   
+    > 6 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      7 |     // 前往主頁面
+      8 |     await page.goto('/');
+      9 |     await page.waitForLoadState('networkidle');
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:6:8
+
+    Error: page.waitForLoadState: Test timeout of 60000ms exceeded.
+
+       7 |     // 前往主頁面
+       8 |     await page.goto('/');
+    >  9 |     await page.waitForLoadState('networkidle');
+         |                ^
+      10 |   });
+      11 |
+      12 |   test('檢查登入按鈕是否存在', async ({ page }) => {
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/video.webm]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查前端是否有Google-OAuth按鈕-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 模擬註冊流程" classname="oauth-login-test.spec.js" time="60.151">
+<failure message="oauth-login-test.spec.js:101:3 模擬註冊流程" type="FAILURE">
+<![CDATA[  [chromium] › oauth-login-test.spec.js:101:3 › Google OAuth 登入和註冊測試 › 模擬註冊流程 ──────────────────────
+
+    Test timeout of 60000ms exceeded while running "beforeEach" hook.
+
+      4 | test.describe('Google OAuth 登入和註冊測試', () => {
+      5 |   
+    > 6 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      7 |     // 前往主頁面
+      8 |     await page.goto('/');
+      9 |     await page.waitForLoadState('networkidle');
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:6:8
+
+    Error: page.waitForLoadState: Test timeout of 60000ms exceeded.
+
+       7 |     // 前往主頁面
+       8 |     await page.goto('/');
+    >  9 |     await page.waitForLoadState('networkidle');
+         |                ^
+      10 |   });
+      11 |
+      12 |   test('檢查登入按鈕是否存在', async ({ page }) => {
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/video.webm]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-模擬註冊流程-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Google OAuth 登入和註冊測試 › 檢查環境變數載入" classname="oauth-login-test.spec.js" time="60.13">
+<failure message="oauth-login-test.spec.js:115:3 檢查環境變數載入" type="FAILURE">
+<![CDATA[  [chromium] › oauth-login-test.spec.js:115:3 › Google OAuth 登入和註冊測試 › 檢查環境變數載入 ────────────────────
+
+    Test timeout of 60000ms exceeded while running "beforeEach" hook.
+
+      4 | test.describe('Google OAuth 登入和註冊測試', () => {
+      5 |   
+    > 6 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      7 |     // 前往主頁面
+      8 |     await page.goto('/');
+      9 |     await page.waitForLoadState('networkidle');
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:6:8
+
+    Error: page.waitForLoadState: Test timeout of 60000ms exceeded.
+
+       7 |     // 前往主頁面
+       8 |     await page.goto('/');
+    >  9 |     await page.waitForLoadState('networkidle');
+         |                ^
+      10 |   });
+      11 |
+      12 |   test('檢查登入按鈕是否存在', async ({ page }) => {
+        at /Users/afu/Desktop/auto_trade/auto_trade/frontend/tests/oauth-login-test.spec.js:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/video.webm]]
+
+[[ATTACHMENT|oauth-login-test-Google-OAuth-登入和註冊測試-檢查環境變數載入-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="登入錯誤處理測試 › 測試無效登入處理" classname="oauth-login-test.spec.js" time="0.9">
+<system-out>
+<![CDATA[ℹ️ 沒有找到登入表單
 ]]>
 </system-out>
 </testcase>

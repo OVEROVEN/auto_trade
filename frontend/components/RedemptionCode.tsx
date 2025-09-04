@@ -39,7 +39,7 @@ export function RedemptionCode() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/redemption/credits', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/redemption/credits`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -59,7 +59,7 @@ export function RedemptionCode() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/redemption/history', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/redemption/history`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -94,7 +94,7 @@ export function RedemptionCode() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/redemption/redeem', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/redemption/redeem`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ export function RedemptionCode() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         setMessage(`${t.redemptionSuccess} ${t.creditsAdded}: ${data.credits_added}`);
         setMessageType('success');
         setRedemptionCode('');
@@ -114,14 +114,18 @@ export function RedemptionCode() {
         await loadUserCredits();
         await loadRedemptionHistory();
       } else {
-        // Handle specific error messages
+        // Handle error responses
         let errorMessage = t.redemptionError;
-        if (data.message.includes('不存在') || data.message.includes('失效')) {
+        const messageText = data.detail || data.message || '';
+        
+        if (messageText.includes('不存在') || messageText.includes('失效')) {
           errorMessage = t.invalidCode;
-        } else if (data.message.includes('已被使用') || data.message.includes('已經使用')) {
+        } else if (messageText.includes('已被使用') || messageText.includes('已經使用')) {
           errorMessage = t.codeAlreadyUsed;
-        } else if (data.message.includes('過期')) {
+        } else if (messageText.includes('過期')) {
           errorMessage = t.codeExpired;
+        } else if (messageText) {
+          errorMessage = messageText;
         }
         
         setMessage(errorMessage);
