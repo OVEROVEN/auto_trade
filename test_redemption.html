@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>測試兌換碼功能</title>
+</head>
+<body>
+    <h2>兌換碼測試</h2>
+    <input type="text" id="redemptionCode" placeholder="輸入兌換碼" value="NEWUSER20">
+    <button onclick="testRedemption()">測試兌換</button>
+    <div id="result"></div>
+
+    <script>
+    async function testRedemption() {
+        const code = document.getElementById('redemptionCode').value;
+        const resultDiv = document.getElementById('result');
+        
+        try {
+            // 先獲取認證信息
+            const authResponse = await fetch('http://localhost:8080/api/auth/me', {
+                credentials: 'include'
+            });
+            
+            console.log('Auth check:', authResponse.status);
+            
+            if (!authResponse.ok) {
+                resultDiv.innerHTML = '<p style="color: red;">錯誤：需要先登入</p>';
+                return;
+            }
+            
+            // 測試兌換碼
+            const response = await fetch('http://localhost:8080/api/redemption/redeem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ code: code })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                resultDiv.innerHTML = `<p style="color: green;">成功：${data.message}</p>`;
+            } else {
+                resultDiv.innerHTML = `<p style="color: red;">錯誤：${data.detail}</p>`;
+            }
+            
+        } catch (error) {
+            console.error('Network error:', error);
+            resultDiv.innerHTML = `<p style="color: red;">網路錯誤：${error.message}</p>`;
+        }
+    }
+    </script>
+</body>
+</html>

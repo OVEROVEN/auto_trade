@@ -26,7 +26,12 @@ export function AuthButton() {
                 {user.full_name || user.email?.split('@')[0] || t.user}
               </span>
               <span className="text-slate-400 text-xs">
-                {user.subscription_tier || t.freeTier}
+                {user.remaining_initial_quota > 0 ? 
+                  `剩餘 ${user.remaining_initial_quota} 次AI分析` : 
+                  user.remaining_daily_quota > 0 ? 
+                    `今日剩餘 ${user.remaining_daily_quota} 次` : 
+                    '配額已用完'
+                }
               </span>
             </div>
           </div>

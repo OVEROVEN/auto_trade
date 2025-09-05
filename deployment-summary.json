@@ -1,0 +1,22 @@
+{
+  "deployment_timestamp": "2025-09-01T20:30:26.523050",
+  "api_version": "2.0.0",
+  "features": [
+    "stock_analysis",
+    "redemption_codes",
+    "ai_recommendations",
+    "user_authentication",
+    "real_time_websockets",
+    "pattern_recognition"
+  ],
+  "environment": {
+    "python_version": "3.13.3",
+    "platform": "darwin"
+  },
+  "deployment_config": {
+    "dockerfile": "Dockerfile.core",
+    "requirements": "requirements-core.txt",
+    "entry_point": "src.api.main:app",
+    "port": "PORT (Railway 動態)"
+  }
+}

@@ -7,6 +7,7 @@ interface User {
   email: string;
   full_name: string;
   is_premium: boolean;
+  subscription_tier?: string; // Added to fix build error
   remaining_initial_quota: number;
   remaining_daily_quota: number;
   can_use_ai_analysis: boolean;
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserInfo = async (authToken: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/auth/me', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: userData.email,
           full_name: userData.full_name,
           is_premium: userData.is_premium || false,
+          subscription_tier: userData.subscription_tier,
           remaining_initial_quota: userData.remaining_initial_quota || 0,
           remaining_daily_quota: userData.remaining_daily_quota || 0,
           can_use_ai_analysis: userData.can_use_ai_analysis || false
@@ -78,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email,
           full_name: data.user.full_name,
           is_premium: data.user.is_premium || false,
+          subscription_tier: data.user.subscription_tier,
           remaining_initial_quota: data.user.remaining_initial_quota || 0,
           remaining_daily_quota: data.user.remaining_daily_quota || 0,
           can_use_ai_analysis: data.user.can_use_ai_analysis || false
@@ -116,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, fullName: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,18 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      // 獲取Google授權URL
-      const response = await fetch('http://localhost:8000/api/auth/google/login', {
-        method: 'GET',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // 重定向到Google授權頁面
-        window.location.href = data.authorization_url;
-      } else {
-        throw new Error('Failed to initiate Google login');
-      }
+      // 直接重定向到後端的Google OAuth端點
+      // 後端會自動重定向到Google授權頁面
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/login`;
     } catch (error) {
       console.error('Google login error:', error);
       throw error;
