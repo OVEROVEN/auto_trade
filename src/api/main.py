@@ -119,8 +119,10 @@ app.add_middleware(
 # Import and include authentication routes
 try:
     from src.auth.auth_endpoints import auth_router
+    from src.api.redemption_endpoints import router as redemption_router
     from src.auth.auth import get_current_user, get_optional_user, check_ai_usage, AIUsageChecker
     app.include_router(auth_router)
+    app.include_router(redemption_router)
     logger.info("✅ 認證模塊載入成功")
     
     # Set authentication available flag
@@ -266,7 +268,7 @@ performance_analyzer = PerformanceAnalyzer()
 # 整合台股功能
 from src.api.taiwan_endpoints import setup_taiwan_routes
 from src.frontend.market_switcher import get_market_switcher
-from src.cache.unified_cache import get_cache
+
 
 # 混合模式 TradingView
 from src.visualization.hybrid_tradingview import get_hybrid_chart
@@ -295,7 +297,7 @@ async def get_dashboard():
 
 # 初始化市場切換器和快取
 market_switcher_instance = get_market_switcher()
-unified_cache_instance = get_cache()
+
 hybrid_chart_instance = get_hybrid_chart()
 
 # Pydantic models for API

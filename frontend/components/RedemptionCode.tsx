@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import API_URL from '../lib/api';
 
 interface UserCredits {
   bonus_credits: number;
@@ -39,7 +40,7 @@ export function RedemptionCode() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/redemption/credits', {
+      const response = await fetch(`${API_URL}/api/redemption/credits`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -59,7 +60,7 @@ export function RedemptionCode() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/redemption/history', {
+      const response = await fetch(`${API_URL}/api/redemption/history`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -78,14 +79,14 @@ export function RedemptionCode() {
     e.preventDefault();
     
     if (!redemptionCode.trim()) {
-      setMessage(t.enterRedemptionCode);
+      setMessage(t('enterRedemptionCode'));
       setMessageType('error');
       return;
     }
 
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      setMessage(t.loginError);
+      setMessage(t('loginError'));
       setMessageType('error');
       return;
     }
@@ -94,7 +95,7 @@ export function RedemptionCode() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/redemption/redeem', {
+      const response = await fetch(`${API_URL}/api/redemption/redeem`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +107,7 @@ export function RedemptionCode() {
       const data = await response.json();
 
       if (data.success) {
-        setMessage(`${t.redemptionSuccess} ${t.creditsAdded}: ${data.credits_added}`);
+        setMessage(`${t('redemptionSuccess')} ${t('creditsAdded')}: ${data.credits_added}`);
         setMessageType('success');
         setRedemptionCode('');
         
@@ -115,13 +116,13 @@ export function RedemptionCode() {
         await loadRedemptionHistory();
       } else {
         // Handle specific error messages
-        let errorMessage = t.redemptionError;
+        let errorMessage = t('redemptionError');
         if (data.message.includes('不存在') || data.message.includes('失效')) {
-          errorMessage = t.invalidCode;
+          errorMessage = t('invalidCode');
         } else if (data.message.includes('已被使用') || data.message.includes('已經使用')) {
-          errorMessage = t.codeAlreadyUsed;
+          errorMessage = t('codeAlreadyUsed');
         } else if (data.message.includes('過期')) {
-          errorMessage = t.codeExpired;
+          errorMessage = t('codeExpired');
         }
         
         setMessage(errorMessage);
@@ -129,7 +130,7 @@ export function RedemptionCode() {
       }
     } catch (error) {
       console.error('Redemption failed:', error);
-      setMessage(t.networkError);
+      setMessage(t('networkError'));
       setMessageType('error');
     } finally {
       setLoading(false);
@@ -145,31 +146,31 @@ export function RedemptionCode() {
       <div className="flex items-center gap-3 mb-6">
         <div className="text-2xl">🎫</div>
         <div>
-          <h2 className="text-xl font-bold text-white">{t.redemptionCode}</h2>
-          <p className="text-sm text-slate-300">{t.redeemCode}</p>
+          <h2 className="text-xl font-bold text-white">{t('redemptionCode')}</h2>
+          <p className="text-sm text-slate-300">{t('redeemCode')}</p>
         </div>
       </div>
 
       {/* Current Credits Display */}
       {userCredits && (
         <div className="mb-6 p-4 bg-slate-700/50 rounded-lg">
-          <h3 className="text-lg font-semibold text-white mb-3">{t.yourCredits}</h3>
+          <h3 className="text-lg font-semibold text-white mb-3">{t('yourCredits')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-blue-500/20 rounded-lg p-3">
               <div className="text-2xl font-bold text-blue-300">{userCredits.bonus_credits}</div>
-              <div className="text-sm text-blue-200">{t.bonusCredits}</div>
+              <div className="text-sm text-blue-200">{t('bonusCredits')}</div>
             </div>
             <div className="bg-green-500/20 rounded-lg p-3">
               <div className="text-2xl font-bold text-green-300">{userCredits.free_credits}</div>
-              <div className="text-sm text-green-200">{t.freeCredits}</div>
+              <div className="text-sm text-green-200">{t('freeCredits')}</div>
             </div>
             <div className="bg-purple-500/20 rounded-lg p-3">
               <div className="text-2xl font-bold text-purple-300">{userCredits.daily_credits}</div>
-              <div className="text-sm text-purple-200">{t.dailyCredits}</div>
+              <div className="text-sm text-purple-200">{t('dailyCredits')}</div>
             </div>
             <div className="bg-yellow-500/20 rounded-lg p-3">
               <div className="text-2xl font-bold text-yellow-300">{userCredits.total_credits}</div>
-              <div className="text-sm text-yellow-200">{t.totalCredits}</div>
+              <div className="text-sm text-yellow-200">{t('totalCredits')}</div>
             </div>
           </div>
         </div>
@@ -182,7 +183,7 @@ export function RedemptionCode() {
             type="text"
             value={redemptionCode}
             onChange={(e) => setRedemptionCode(e.target.value)}
-            placeholder={t.enterRedemptionCode}
+            placeholder={t('enterRedemptionCode')}
             className="flex-1 px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={loading}
           />
@@ -197,10 +198,10 @@ export function RedemptionCode() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {t.processing}
+                {t('processing')}
               </>
             ) : (
-              t.redeemNow
+              t('redeemNow')
             )}
           </button>
         </div>
@@ -223,7 +224,7 @@ export function RedemptionCode() {
           onClick={() => setShowHistory(!showHistory)}
           className="flex items-center justify-between w-full text-left text-white hover:text-blue-300 transition-colors"
         >
-          <span className="font-semibold">{t.redemptionHistory}</span>
+          <span className="font-semibold">{t('redemptionHistory')}</span>
           <svg
             className={`w-5 h-5 transition-transform ${showHistory ? 'rotate-180' : ''}`}
             fill="none"
@@ -238,7 +239,7 @@ export function RedemptionCode() {
         {showHistory && (
           <div className="mt-4">
             {redemptionHistory.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">{t.noRedemptionHistory}</p>
+              <p className="text-slate-400 text-center py-8">{t('noRedemptionHistory')}</p>
             ) : (
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {redemptionHistory.map((item, index) => (

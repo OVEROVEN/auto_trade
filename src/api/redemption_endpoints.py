@@ -2,6 +2,9 @@
 兌換碼系統API端點
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -16,7 +19,7 @@ router = APIRouter(prefix="/api/redemption", tags=["兌換碼系統"])
 
 # Pydantic 模型
 class RedeemCodeRequest(BaseModel):
-    code: str = Field(..., description="兌換碼", min_length=12, max_length=14)
+    code: str = Field(..., description="兌換碼")
 
 class RedeemCodeResponse(BaseModel):
     success: bool = Field(..., description="兌換是否成功")
@@ -136,6 +139,7 @@ async def redeem_code(
         
     except Exception as e:
         db.rollback()
+        logger.error(f"Redemption failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"兌換過程中發生錯誤：{str(e)}"

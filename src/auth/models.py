@@ -19,36 +19,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional
 from decimal import Decimal
 
-# Custom UUID type that works with both SQLite and PostgreSQL
-class UUID(TypeDecorator):
-    """Platform-independent UUID type"""
-    impl = CHAR
-    cache_ok = True
 
-    def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            return dialect.type_descriptor(PG_UUID())
-        else:
-            return dialect.type_descriptor(CHAR(36))
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        elif dialect.name == 'postgresql':
-            return str(value)
-        else:
-            if not isinstance(value, uuid.UUID):
-                return str(uuid.UUID(value))
-            else:
-                return str(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        else:
-            if not isinstance(value, uuid.UUID):
-                return uuid.UUID(value)
-            return value
 
 Base = declarative_base()
 
@@ -56,7 +27,7 @@ class User(Base):
     """用戶表 - 存儲用戶基本信息和認證資料"""
     __tablename__ = "users"
     
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=True)  # OAuth用戶可為空
     google_id = Column(String(255), nullable=True, unique=True)  # Google OAuth ID
@@ -83,8 +54,8 @@ class UsageRecord(Base):
     """使用記錄表 - 追踪用戶AI分析等功能使用情況"""
     __tablename__ = "usage_records"
     
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     action_type = Column(String(50), nullable=False, index=True)  # ai_analysis, chart_view, etc.
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     extra_data = Column(JSON, nullable=True)  # 額外信息：股票代碼、分析類型等
@@ -99,8 +70,8 @@ class Subscription(Base):
     """訂閱表 - 管理用戶訂閱狀態和計費"""
     __tablename__ = "subscriptions"
     
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(), ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     plan_type = Column(String(20), nullable=False, default="free")  # free, premium
     status = Column(String(20), nullable=False, default="active")  # active, cancelled, expired, pending
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -135,9 +106,9 @@ class Payment(Base):
     """支付記錄表 - 記錄所有支付交易"""
     __tablename__ = "payments"
     
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(), ForeignKey("users.id"), nullable=False, index=True)
-    subscription_id = Column(UUID(), ForeignKey("subscriptions.id"), nullable=True, index=True)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    subscription_id = Column(PG_UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=True, index=True)
     amount = Column(DECIMAL(10, 2), nullable=False)  # 支付金額
     currency = Column(String(3), nullable=False, default="USD")  # USD, TWD
     payment_method = Column(String(50), nullable=False)  # credit_card, ecpay_atm, newebpay_card, etc.
@@ -160,8 +131,8 @@ class FreeQuota(Base):
     """免費配額表 - 管理用戶免費使用次數"""
     __tablename__ = "free_quotas"
     
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(), ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True, index=True)
     total_free_uses = Column(Integer, nullable=False, default=3)  # 新用戶總免費次數
     used_free_uses = Column(Integer, nullable=False, default=0)  # 已使用的免費次數
     bonus_credits = Column(Integer, nullable=False, default=0)  # 兌換碼獲得的額外AI分析次數
@@ -222,7 +193,13 @@ class FreeQuota(Base):
     def _reset_daily_quota_if_needed(self):
         """重置每日配額（如果需要）"""
         today = date.today()
-        if self.daily_reset_date < today:
+        
+        # Ensure we are comparing date objects
+        reset_date = self.daily_reset_date
+        if isinstance(reset_date, datetime):
+            reset_date = reset_date.date()
+
+        if reset_date < today:
             self.daily_reset_date = today
             self.daily_used_count = 0
     

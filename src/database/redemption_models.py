@@ -3,6 +3,7 @@
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from datetime import datetime, timedelta
 import secrets
 import string
@@ -22,7 +23,7 @@ class RedemptionCode(Base):
     # 狀態
     is_active = Column(Boolean, default=True)  # 是否啟用
     is_used = Column(Boolean, default=False)   # 是否已使用
-    used_by_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)  # 使用者
+    used_by_user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # 使用者
     
     # 時間
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -56,7 +57,7 @@ class RedemptionHistory(Base):
     __tablename__ = "redemption_history"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(), ForeignKey("users.id"), nullable=False)
     code_id = Column(Integer, ForeignKey("redemption_codes.id"), nullable=False)
     credits_added = Column(Integer, nullable=False)
     redeemed_at = Column(DateTime, default=datetime.utcnow)
