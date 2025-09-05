@@ -197,3 +197,7 @@ export class StockWebSocket {
     }
   }
 }
+
+// 默認導出 API URL
+const API_URL = getApiUrl();
+export default API_URL;

@@ -11,6 +11,43 @@ const nextConfig = {
       },
     ]
   },
+  
+  // 修復TradingView CORS問題的headers配置
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://*.tradingview.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' https://fonts.gstatic.com",
+              "connect-src 'self' https://*.tradingview.com https://telemetry.tradingview.com wss://*.tradingview.com ws://localhost:* http://localhost:*",
+              "frame-src 'self' https://*.tradingview.com",
+              "worker-src 'self' blob:",
+              "child-src 'self' https://*.tradingview.com",
+              "object-src 'none'",
+              "media-src 'self'",
+              "manifest-src 'self'"
+            ].join('; ')
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+    ]
+  },
+  
   // 優化生產構建
   output: 'standalone',
   
@@ -24,7 +61,15 @@ const nextConfig = {
     domains: [
       'localhost',
       'your-api-domain.com',
+      's3.tradingview.com',
+      'static.tradingview.com'
     ],
+  },
+  
+  // 實驗性功能 - 改善TradingView Widget載入
+  experimental: {
+    // 允許外部腳本
+    externalDir: true,
   },
 }
 
